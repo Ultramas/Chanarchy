@@ -41,7 +41,7 @@
             <div class="modal-dialog" role="document">
               <div class="modal-content">
                 <ul>
-                  <li><a type="button" class="btn" href="">Change Password</a></li>
+                  <li><a type="button" class="btn" href="{% url 'account_settings' %}">Change Password</a></li>
                   <li><a type="button" class="btn" href="{% url 'signout' %}">Logout</a></li>
                   <li><a type="button" class="btn" data-dismiss="modal">Cancel</a></li>
                 </ul>
@@ -56,7 +56,11 @@
         {% endif %}
         <div class="desktop-block">
           <ul class="stats">
+            {% if profile.igpost_set.count == 1 %}
+              <li class="stats__count"><span>{{ profile.igpost_set.count }}</span> Post</li>
+            {% else %}
               <li class="stats__count"><span>{{ profile.igpost_set.count }}</span> Posts</li>
+            {% endif %}
               <a href="{% url 'followers' username=profile.user.username %}"><li class="stats__count"><span>{{ profile.get_number_of_followers }}</span> Followers</li></a>
               <a href="{% url 'following' username=profile.user.username %}"><li class="stats__count"><span>{{ profile.get_number_of_following }}</span> Following</li></a>
           </ul>

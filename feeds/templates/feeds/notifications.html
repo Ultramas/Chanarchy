@@ -1,5 +1,25 @@
 {% extends 'feeds/base.html' %}
 
 {% block content %}
-notifications here
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Notifications</title>
+    <!-- Include your CSS and JavaScript files here -->
+</head>
+<body>
+    <h1>Notifications</h1>
+    <ul>
+        {% for notification in notifications %}
+            <li>
+                <strong>{{ notification.notification_type.name }}</strong>: {{ notification.message }}
+                <!-- You can add more fields here based on your Notification model -->
+            </li>
+        {% empty %}
+            <li>No notifications</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
+
 {% endblock %}

@@ -1,10 +1,21 @@
 {% extends 'feeds/base.html' %}
 
 {% block content %}
-<div class="row" id="explore">
+<head>
+<style>
+</style>
+</head>
+
+<body>
+<br>
+<br>
+
+<br>
+<br>
+<div class="row justify-content-center" id="explore" style="margin-left: 250px; margin-right: 250px;">
   {% for post in posts reversed %}
-    <div class="col-xs-4 col-sm-3">
-      <div class="picture-square" style="background-image: url({{ post.image.url }})">
+    <div class="col-xs-12 col-sm-6 col-md-4 mb-4" style="padding: 0 15px 30px;">
+      <div class="picture-square" style="background-image: url({{ post.image.url }}); background-size: cover;">
         <a href="{% url 'post' post.pk %}">
           <div class="content"></div>
         </a>
@@ -12,4 +23,6 @@
     </div>
   {% endfor %}
 </div>
+
+</body>
 {% endblock %}

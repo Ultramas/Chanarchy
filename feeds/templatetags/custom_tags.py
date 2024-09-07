@@ -1,6 +1,6 @@
 import re
 from django import template
-from django.core.urlresolvers import reverse, NoReverseMatch
+from django.urls import reverse, NoReverseMatch
 from feeds.models import Like
 
 register = template.Library()
@@ -56,3 +56,13 @@ def active(context, pattern_or_urlname):
     if re.search(pattern, path):
         return 'active'
     return ''
+
+
+@register.filter(name='attr')
+def attr(field, args):
+    attrs = {}
+    definition = args.split(',')
+    for d in definition:
+        key, val = d.split('=')
+        attrs[key] = val
+    return field.as_widget(attrs=attrs)

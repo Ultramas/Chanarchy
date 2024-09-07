@@ -1,0 +1,96 @@
+<!--posts to users-->
+{% extends 'feeds/base.html' %}
+
+{% load static %}
+
+
+{% block content %}
+
+
+<head>
+
+    <title>{{ user.username }}'s Account Settings</title>
+
+   <style>
+        .boedy{
+      display: flex;
+      justify-content: center;
+        }
+
+    /* DEMO-SPECIFIC STYLES */
+    .containereatede h1 {
+      font-family: 'Playfair Display', serif;
+      overflow: hidden; /* Ensures the content is not revealed until the animation */
+      border-right: .15em solid red; /* The typewriter cursor */
+      white-space: nowrap; /* Keeps the content on a single line */
+      margin: 0 auto; /* Gives that scrolling effect as the typing happens */
+      letter-spacing: .0em; /* Adjust as needed */
+      animation:
+        typing 3.5s steps(30, end),
+        blink-caret .5s step-end infinite;
+    }
+
+    /* The typing effect */
+    @keyframes typing {
+      from { width: 0 }
+      to { width: 100% }
+    }
+
+    /* The typewriter cursor effect */
+    @keyframes blink-caret {
+      from, to { border-color: transparent }
+      35% { border-color: rgba(255, 255, 255, 0.637)}
+    }
+        </style>
+
+</head>
+<body>
+
+<div class="postww">
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+<div class="post2v">
+
+            <div class = "boedy">
+  <div class="containereatede">
+     <h1 class = "banh1">Settings</h1>
+      <br>
+     <h3 class = "banh1">Change Your Username, Password, And Preferences Here!</h3>
+      </div>
+                </div>
+     <br>
+     <br>
+  <form method="POST" class="post">
+    {% csrf_token %}
+    {{form.as_p}}
+    <button type="submit">Change</button>
+           <div class="drops">
+               <!--fix the drop classes in style-->
+        <div class="drop drop-1"></div>
+        <div class="drop drop-2"></div>
+        <div class="drop drop-3"></div>
+        <div class="drop drop-4"></div>
+        <div class="drop drop-5"></div>
+     </div>
+  </form>
+</div>
+</div>
+
+
+  {% if img_obj %}
+  <h3>Succesfully uploaded : {{img_obj.title}}</h3>
+  <img src="{{ img_obj.image}}" alt="connect" style="max-height:300px">
+{% endif %}
+
+
+
+</div>
+ </body>
+
+{% endblock content %}

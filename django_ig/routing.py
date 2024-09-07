@@ -1,6 +1,14 @@
 from channels.routing import route
 from channels import include
 from feeds.consumers import ws_connect, ws_receive, ws_disconnect
+from channels.routing import ProtocolTypeRouter, URLRouter
+from django.core.asgi import get_asgi_application
+from notifications.routing import websocket_urlpatterns
+
+application = ProtocolTypeRouter({
+    "http": get_asgi_application(),
+    "websocket": URLRouter(websocket_urlpatterns),
+})
 
 chat_routing = [
     route("websocket.connect", ws_connect),

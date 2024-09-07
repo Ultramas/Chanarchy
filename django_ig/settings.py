@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/1.9/ref/settings/
 
 import os
 import dj_database_url
+import environ
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,6 +34,8 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'admin_interface',
+    'colorfield',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,21 +46,47 @@ INSTALLED_APPS = [
     'imagekit',
     'annoying',
     'feeds',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'notifications',
+    "guest_user",
+    "guest_user.contrib.allauth",
+    'widget_tweaks',
 ]
 
-MIDDLEWARE_CLASSES = [
+MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # Django standard middlewares above
+    'allauth.account.middleware.AccountMiddleware',
+]
 
-    # Custom middlewares below
-    'feeds.middleware.login_required_middleware.FilterUnauthUsers',
+
+env = environ.Env()
+environ.Env.read_env()
+
+
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'  # new
+# DEFAULT_FROM_EMAIL='poketrovecompany@gmail.com'
+EMAIL_HOST=env('EMAIL_HOST')  # new
+EMAIL_HOST_USER=env('EMAIL_HOST_USER')  # new
+EMAIL_HOST_PASSWORD=env('EMAIL_HOST_PASSWORD')  # new
+EMAIL_PORT=587  # new
+EMAIL_USE_TLS=True  # new
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    'allauth.account.auth_backends.AuthenticationBackend',
+    # it should be the last entry to prevent unauthorized access
+    "guest_user.backends.GuestBackend",
 ]
 
 ROOT_URLCONF = 'django_ig.urls'
@@ -137,6 +166,7 @@ USE_L10N = True
 
 USE_TZ = True
 
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
@@ -148,7 +178,8 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
-STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = '/media/'

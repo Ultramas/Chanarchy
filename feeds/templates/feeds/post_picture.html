@@ -3,21 +3,184 @@
 {% block content %}
 <div class="row">
   <div class="col-xs-12">
-    <form action="" method="post" enctype="multipart/form-data">
-      {% csrf_token %}
+   <!-- Modal 1: Title and Description -->
+<!-- Modal 1: Title and Description -->
+<div class="modal fade" id="titleDescriptionModal" tabindex="-1" role="dialog" aria-labelledby="titleDescriptionModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="titleDescriptionModalLabel">Enter Title and Description</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="titleDescriptionForm" method="POST" enctype="multipart/form-data" action="{% url 'post_picture' %}">
+          {% csrf_token %}
+          <label>
+            {{ form.title.label }}
+            {{ form.title }}
+            {{ form.title.errors }}
+          </label>
+          <br>
+          <label>
+            {{ form.description.label }}
+            {{ form.description }}
+            {{ form.description.errors }}
+          </label>
+          <br>
+          <button type="button" class="btn btn-primary" id="nextButton">Next</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
-      <label>
-        {{ form.title.label }}
-        {{ form.title }}
-        {{ form.title.errors }}
-      </label>
-      <label>
-        {{ form.image.label }}
-        {{ form.image }}
-        {{ form.image.errors }}
-      </label>
-      <button type="submit" class="btn btn-default">Submit</button>
-    </form>
+<!-- Modal 2: Image and Video -->
+<div class="modal fade" id="mediaModal" tabindex="-1" role="dialog" aria-labelledby="mediaModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="mediaModalLabel">Capture Image or Record Video</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="mediaForm" method="POST" enctype="multipart/form-data" action="{% url 'post_picture' %}">
+          {% csrf_token %}
+          <label for="id_image">Capture Image:</label>
+          <input type="file" name="image" id="id_image" accept="image/*" capture="camera"><br>
+
+          <label for="id_video">Record Video:</label>
+          <input type="file" name="video" id="id_video" accept="video/*" capture="camcorder"><br>
+
+              <button type="submit" class="btn btn-default" onclick="submitAndRedirect()">Submit</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    function submitAndRedirect() {
+        // Submit the form
+        document.getElementById('mediaForm').submit();
+
+        // Redirect to the user's profile
+        window.location.href = "{% url 'profile' username=request.user.username %}";
+    }
+</script>
+
+    <br>
+    <br>
+<!-- Button to Open the First Modal -->
+    <h2>Upload A Post</h2>
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#titleDescriptionModal">
+  Upload Post
+</button>
+<!-- Modal 3: Title and Description for Second Set -->
+<div class="modal fade" id="titleDescriptionModal2" tabindex="-1" role="dialog" aria-labelledby="titleDescriptionModalLabel2" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="titleDescriptionModalLabel2">Enter Title and Description</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="titleDescriptionForm2" method="POST" enctype="multipart/form-data" action="{% url 'post_picture' %}">
+          {% csrf_token %}
+          <label>
+            {{ form.title.label }}
+            {{ form.title }}
+            {{ form.title.errors }}
+          </label>
+          <br>
+          <label>
+            {{ form.description.label }}
+            {{ form.description }}
+            {{ form.description.errors }}
+          </label>
+          <br>
+          <button type="button" class="btn btn-primary" id="nextButton2">Next</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal 4: Photo and Video -->
+<div class="modal fade" id="photoVideoModal" tabindex="-1" role="dialog" aria-labelledby="photoVideoModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="photoVideoModalLabel">Capture Photo or Record Video</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <label for="id_photo">Capture Photo:</label>
+        <input type="file" name="photo" id="id_photo" accept="image/*" capture="camera"><br>
+
+        <label for="id_video2">Record Video:</label>
+        <input type="file" name="video" id="id_video2" accept="video/*" capture="camcorder"><br>
+
+        <button type="submit" class="btn btn-default">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+    <br>
+    <br>
+    <h2>Create A Post</h2>
+<!-- Button to Open the Second Modal Set -->
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#titleDescriptionModal2">
+  Create Post with Photo/Video
+</button>
+
+<script>
+document.getElementById('nextButton').addEventListener('click', function() {
+    $('#titleDescriptionModal').modal('hide');
+    $('#mediaModal').modal('show');
+});
+
+document.getElementById('mediaForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    // Collect data from both forms
+    var titleForm = document.getElementById('titleDescriptionForm');
+    var mediaForm = document.getElementById('mediaForm');
+
+    // Merge form data if needed
+    var formData = new FormData(titleForm);
+    var mediaData = new FormData(mediaForm);
+
+    for (var [key, value] of mediaData.entries()) {
+        formData.append(key, value);
+    }
+
+    // Send the combined data using fetch or AJAX
+    fetch("{% url 'post_picture' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    }).then(response => {
+        if (response.ok) {
+            // Handle success (e.g., close modal, show success message)
+        } else {
+            // Handle error
+        }
+    }).catch(error => {
+        // Handle network error
+    });
+});
+
+</script>
+
   </div>
 </div>
 {% endblock %}

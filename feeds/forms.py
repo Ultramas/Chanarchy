@@ -5,7 +5,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 
 from imagekit.forms import ProcessedImageField
 
-from . models import IGPost, UserProfile, Comment, Like
+from .models import IGPost, UserProfile, Comment, Like, SettingsModel
 
 
 class UserCreateForm(UserCreationForm):
@@ -35,7 +35,45 @@ class ProfileEditForm(ModelForm):
         fields = ['profile_pic', 'description']
 
 
+class SettingsForm(forms.ModelForm):
+    class Meta:
+        model = SettingsModel
+        fields = ('username', 'password', 'email')
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.user = self.instance.user
+        if commit:
+            instance.save()
+        return instance
+
+
 class CommentForm(ModelForm):
     class Meta:
         model = Comment
         fields = ['comment']
+
+
+from .models import BackgroundTheme
+
+
+class BackgroundThemeForm(forms.ModelForm):
+    class Meta:
+        model = BackgroundTheme
+        fields = [
+            'backgroundtitle',
+            'cover',
+            'file',
+        ]
+        # Optional: You can add custom widgets, labels, or help texts here.
+        widgets = {
+            'backgroundtitle': forms.TextInput(attrs={'class': 'form-control'}),
+            'cover': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),
+            'image_width': forms.NumberInput(attrs={'class': 'form-control'}),
+            'image_length': forms.NumberInput(attrs={'class': 'form-control'}),
+            'file': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),
+            'alternate': forms.TextInput(attrs={'class': 'form-control'}),
+            'url': forms.URLInput(attrs={'class': 'form-control'}),
+            'position': forms.NumberInput(attrs={'class': 'form-control'}),
+            'is_active': forms.Select(attrs={'class': 'form-select'}),
+        }

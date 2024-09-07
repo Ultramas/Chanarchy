@@ -1,8 +1,197 @@
 {% load custom_tags %}
-<div class="navbar navbar-default navbar-fixed-top" id="main-nav">
+{% load static %}
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+<style>
+
+body{
+  font-size: 16px;
+  background-image: url(background.jpg) no-repeat fixed center;
+  min-height: 100vh;
+}
+
+* {box-sizing: border-box;}
+
+.sidebar{
+  background: rgba(28, 28, 38, 0.6);
+  color: #fff;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 15em;
+  height: 100%;
+  overflow-y: hidden;
+}
+
+.sidebar ::-webkit-scrollbar {
+width: 5px;
+}
+.sidebar ::-webkit-scrollbar-track {
+background: transparent;
+}
+
+
+.sidebar ::-webkit-scrollbar-thumb {
+background: #2a2f44;
+  border-radius: 10px;
+}
+
+.sidebar > div {
+  height: 100%;
+  overflow-y: scroll;
+  padding: 17em 1em 1.7em 1em;
+}
+
+.sidebar a {
+  text-decoration: none;
+}
+
+.sidebar ul{
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+
+.sidebar small{
+  color: #ccc;
+}
+
+.brand{
+display: block;
+  font-size: 1.5em;
+  color: #fff;
+  font-weight: 600;
+}
+
+.menu-heading{
+  padding: 1em;
+  margin: 2em 0 0.5em 0;
+  display: block;
+}
+
+.sidebar ul{
+  padding-bottom: 1.5em;
+}
+
+.sidebar li a{
+  color: #ccc;
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  padding: 1em;
+  border-radius: 0.8em;
+  transition: 0.3s;
+}
+
+.tools li a:hover{
+  background: #1bd030;
+  color: #fff;
+}
+
+.sidebar ul .material-icons-outlined{
+  font-size: 1.6em;
+  margin-right: 0.5em;
+}
+
+hr {
+  border: 1px #2a2f44 solid;
+  width: 90%;
+  margin: 0 auto;
+}
+
+.notifications li a{
+  justify-content: space-between;
+}
+
+.notifications li a div{
+  display: flex;
+  justify-content: start;
+  align-items: start;
+}
+
+.notifcations li a:hover{
+  color: #fff;
+}
+
+.badge {
+  background: #1bd030;
+  border-radius: 50%;
+  width: 1.8em;
+  height: 1.8em;
+  text-align: center;
+  line-height: 20px;
+  color: #fff;
+  font-size: 0.7em;
+}
+
+.profileclass{
+  padding: 1.7em 1em 3.7em 1em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profileclass img{
+  width: 2.5em;
+  height: 2.5em;
+  border-radius: 50%;
+  display: inline-block;
+  text-align: center;
+}
+
+.profileclass h4{
+  margin: 0 0 0.5em 0;
+}
+
+@media screen and (max-width: 800px) {
+  .sidebar {
+    width: 4.5em;
+    font-size: 14px;
+    text-align: center;
+  }
+  .sidebar > div{
+    padding: 1.7em 0.3em 1.7em 0.3em;
+  }
+  .sidebar span:not(.material-icons-outlined), .profileclass div, .profileclass span{
+    display: none;
+  }
+  .menu-heading, .profileclass{
+    margin-top: 0;
+  }
+  .profileclass {
+    justify-content: center;
+  }
+}
+.audiowide-regular {
+  font-family: "Audiowide", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+</style>
+</head>
+
+<div class="navbar navbar-default navbar-fixed-top" id="main-nav" style="background-color: rgba(255, 255, 255, 0.9);">
       <div class="container desktop">
         <div class="navbar-header">
-            <a href="/" class="navbar-brand">Django IG</a>
+            <a href="/" class="navbar-brand">Chanarchy</a>
             <button type="button" data-toggle="collapse" data-target="#navbar-main" class="navbar-toggle">
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
@@ -23,7 +212,7 @@
                     <li><a href="{% url 'profile' request.user.username %}"><i class="fa fa-user {% active 'profile' %}" aria-hidden="true"></i></a></li>
                     <li><a href="{% url 'inbox' %}"><i class="fa fa-inbox {% active 'inbox' %}" aria-hidden="true"></i></a></li>
                     <!--
-                      Using profile page logout for now
+                      Using profileclass page logout for now
                       <li><a href="{% url 'signout' %}">Signout</a></li>
                     -->
                 {% else %}
@@ -86,8 +275,432 @@
     <a class="new-message" href="{% url 'new_chat' %}"><i class="fa fa-plus active"></i></a>
   {% else %}
     <div class="navbar-header">
-        <a href="/" class="navbar-brand">Django IG</a>
+        <a href="/" class="navbar-brand">Chanarchy</a>
     </div>
   {% endif %}
 </div>
+
+  <nav class="sidebar">
+
+    <div>
+        <img src="../static/images/logo.png" style="margin-top: -95%; width: 200px; height: 160px;">
+      <hr/>
+        <br>
+        <br>
+<span class="material-symbols-outlined" style="font-size: 22px; margin-left: 5px; margin-top: -150px;">
+                  QuickNav
+                  </span>
+        <br>
+        <br>
+      <ul class="tools">
+        <li>
+      <a href="{% url 'index' %}">
+        <div style="display: flex;">
+                <span class="material-symbols-outlined">
+                  home
+                  </span>
+                          <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+                  Home
+                  </span>
+          </div>
+      </a>
+        </li>
+      <li>
+        <a href="{% url 'explore' %}">
+        <div style="display: flex;">
+                <span class="material-symbols-outlined">
+                  search
+                  </span>
+                          <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+                  Explore
+                  </span>
+          </div>
+        </a>
+      </li>
+        <li>
+          <a href="{% url 'new_chat' %}">
+            <span class="material-symbols-outlined">
+            forum
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 0px; font-family: 'Audiowide';">
+            Messages
+            </span>
+          </a>
+        </li>
+        <li>
+         <a href="{% url 'index' %}">
+            <span class="material-symbols-outlined">
+             Overview
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+            To-Do
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'notifications' %}">
+            <span class="material-symbols-outlined">
+            notifications
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 0px; font-family: 'Audiowide';">
+            Notifications
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'post_picture' %}">
+            <span class="material-symbols-outlined">
+            add_circle
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 0px; font-family: 'Audiowide';">
+            Create Post
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'index' %}">
+            <span class="material-symbols-outlined">
+            photo_camera
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 0px; font-family: 'Audiowide';">
+            Record Post
+            </span>
+          </a>
+        </li>
+        <li>
+          {% if user.is_authenticated %}
+                <a href="{% url 'profile_settings' user.username %}">
+            {% else %}
+                    <a href="{% url 'login'  %}" style="text-decoration: none; color: white;">
+            {% endif %}
+
+            <span class="material-symbols-outlined" style="color: #ccc;">
+              manage_accounts
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide'; color: #ccc;">
+            My Account
+            </span>
+                    </a>
+                </a>
+        </li>
+          <li>
+          {% if user.is_authenticated %}
+                <a href="{% url 'account_settings' %}" style="text-decoration: none; color: white;">
+
+            <span class="material-symbols-outlined" style="color: #ccc;">
+              settings
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide'; color: #ccc;">
+            Settings
+            </span>
+                    </a>
+                </a>
+            {% else %}
+                    <a href="{% url 'login'  %}" style="text-decoration: none; color: white;">
+
+            <span class="material-symbols-outlined" style="color: #ccc;">
+              login
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide'; color: #ccc;">
+            Login
+            </span>
+                    </a>
+                </a>
+            {% endif %}
+        </li>
+      </ul>
+      <hr/>
+      <small class="menu-heading">
+          <span class="material-symbols-outlined" style="font-size: 22px; margin-left: 5px; margin-top: -150px; color: white;">Contact</span>
+      </small>
+      <ul class="notifications">
+        <li>
+          <a href="#">
+            <div>
+              <span class="material-symbols-outlined">
+              mail
+              </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+            Email
+            </span>
+
+            </div>
+            <span class="badge">18</span>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <div>
+              <span class="material-symbols-outlined">
+              call
+              </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+            Call
+            </span>
+
+            </div>
+            <span class="badge">7</span>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <div>
+              <span class="material-symbols-outlined">
+              video_call
+              </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+            Video Call
+            </span>
+
+            </div>
+            <span class="badge">24</span>
+          </a>
+        </li>
+      </ul>
+      <div class="profileclass">
+        <a href="{% url 'profile' user.username %}">
+        {% if user_profile.profile_pic %}
+          <img class="picture-circle" src="{{ user_profile.profile_pic.url }}">
+        {% else %}
+          <img class="picture-circle" src="{% static 'images/profile_placeholder.jpg' %}">
+        {% endif %}
+
+        </a>
+        <div>
+          <h3 style="margin-left: -40px;">{{user.username}}</h3>
+            </div>
+            <span class="material-icons-outlined">
+            </span>
+      </div>
+    </div>
+  </nav>
+</body>
+{% else %}
+
+<body style="background: url('';  alt=''; background-size: cover; background-repeat: no-repeat;">
+
+    <div class="cards-listing">
+        {% for post in posts %}
+            <div class="row">
+                <div class="card view-update {{ post.pk }}">
+                    <div class="card__panel-head">
+                        <div class="poster__info">
+                            <a href="{% url 'profile' post.user_profile.user.username %}" class="poster__name">
+                              {% if post.user_profile.profile_pic %}
+                                <img class="poster__profilepic" src="{{ post.user_profile.profile_pic.url }}">
+                              {% else %}
+                                <img class="poster__profilepic" src="{% static 'images/profile_placeholder.jpg' %}">
+                              {% endif %}
+                              {{ post.user_profile.user.username }}
+                            </a>
+                            <span class="poster__timestamp">
+                                {{ post.posted_on|timesince }}
+                            </span>
+                        </div>
+                    </div>
+                    <img class="card__main-image" src="{{ post.image.url }}">
+                    <div class="card__panel-body">
+                        <a href="{% url 'likes' post.pk %}">
+                          <div class="likes">
+                            {% if post.get_number_of_likes %}
+                                {{ post.get_number_of_likes }} like{% if post.get_number_of_likes > 1 %}s{% endif %}
+                            {% endif %}
+                          </div>
+                        </a>
+                        <ul class="comment-list">
+                          <li class="comment-list__comment">
+                            <a class="user" href="{% url 'profile' post.user_profile.user.username %}">
+                              {{ post.user_profile.user.username }}
+                            </a>
+                            <span class="comment">{{ post.title | parse_hashtags | safe }}</span>
+                          </li>
+                          <a class="view-more"></a>
+                          {% for comment in post.comment_set.all %}
+                            <li class="comment-list__comment">
+                              <a href="{% url 'profile' comment.user.username %}" class="user">
+                                {{ comment.user.username }}
+                              </a>
+                              <span class="comment">{{ comment.comment }}</span>
+                            </li>
+                          {% endfor %}
+                        </ul>
+                        {% if request.user.is_authenticated %}
+                          <section class="input-row">
+                            <i class="fa {% has_user_liked_post post request.user %} submit-like" aria-hidden="true"></i>
+                            <div class="comment-input-wrapper">
+                              <input class="add-comment" type="text" placeholder="Add a comment...">
+                            </div>
+                            <div class="hidden-data {{ post.pk }}" style="display: none;">
+                              <span class="post-pk">{{ post.pk }}</span>
+                            </div>
+                          </section>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+  <nav class="sidebar">
+
+    <div>
+        <img src="../static/images/logo.png" style="margin-top: -95%; width: 200px; height: 160px;">
+      <hr/>
+        <br>
+        <br>
+<span class="material-symbols-outlined" style="font-size: 22px; margin-left: 5px; margin-top: -150px;">
+                  QuickNav
+                  </span>
+        <br>
+        <br>
+      <ul class="tools">
+        <li>
+      <a href="{% url 'index' %}">
+        <div style="display: flex;">
+                <span class="material-symbols-outlined">
+                  home
+                  </span>
+                          <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+                  Home
+                  </span>
+          </div>
+      </a>
+        </li>
+      <li>
+        <a href="{% url 'explore' %}">
+        <div style="display: flex;">
+                <span class="material-symbols-outlined">
+                  search
+                  </span>
+                          <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+                  Explore
+                  </span>
+          </div>
+        </a>
+      </li>
+        <li>
+          <a href="{% url 'new_chat' %}">
+            <span class="material-symbols-outlined">
+            forum
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 0px; font-family: 'Audiowide';">
+            Messages
+            </span>
+          </a>
+        </li>
+        <li>
+         <a href="{% url 'index' %}">
+            <span class="material-symbols-outlined">
+             Overview
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+            To-Do
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'notifications' %}">
+            <span class="material-symbols-outlined">
+            notifications
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 0px; font-family: 'Audiowide';">
+            Notifications
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'post_picture' %}">
+            <span class="material-symbols-outlined">
+            add_circle
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 0px; font-family: 'Audiowide';">
+            Create Post
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'index' %}">
+            <span class="material-symbols-outlined">
+            photo_camera
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 0px; font-family: 'Audiowide';">
+            Record Post
+            </span>
+          </a>
+        </li>
+        <li>
+          {% if user.is_authenticated %}
+                <a href="{% url 'profile_settings' user.username %}">
+            {% else %}
+                    <a href="{% url 'login'  %}" style="text-decoration: none; color: white;">
+            {% endif %}
+
+            <span class="material-symbols-outlined" style="color: #ccc;">
+              manage_accounts
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide'; color: #ccc;">
+            Settings
+            </span>
+                    </a>
+                </a>
+        </li>
+      </ul>
+      <hr/>
+      <small class="menu-heading">
+          <span class="material-symbols-outlined" style="font-size: 22px; margin-left: 5px; margin-top: -150px; color: white;">Contact</span>
+      </small>
+      <ul class="notifications">
+        <li>
+          <a href="#">
+            <div>
+              <span class="material-symbols-outlined">
+              mail
+              </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+            Email
+            </span>
+
+            </div>
+            <span class="badge">18</span>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <div>
+              <span class="material-symbols-outlined">
+              call
+              </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+            Call
+            </span>
+
+            </div>
+            <span class="badge">7</span>
+          </a>
+        </li>
+        <li>
+          <a href="#">
+            <div>
+              <span class="material-symbols-outlined">
+              video_call
+              </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+            Video Call
+            </span>
+
+            </div>
+            <span class="badge">24</span>
+          </a>
+        </li>
+      </ul>
+      <div class="profileclass">
+          <img class="picture-circle" src="{% static 'images/profile_placeholder.jpg' %}">
+        <div>
+          <h3 style="margin-left: -40px;">{{user.username}}</h3>
+            </div>
+            <span class="material-icons-outlined">
+            </span>
+      </div>
+    </div>
+  </nav>
 {% endif %}

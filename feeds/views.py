@@ -1,4 +1,6 @@
 import datetime
+
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.http import JsonResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -7,29 +9,52 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
-from django.core.urlresolvers import reverse
-from django.views.generic.edit import CreateView
+from django.urls import reverse, reverse_lazy
+from django.views.generic import ListView
+from django.views.generic.edit import CreateView, FormView
 
+from guest_user.mixins import RegularUserRequiredMixin
 from imagekit.models import ProcessedImageField
 from annoying.decorators import ajax_request
+from notifications.models import Notification
 
-from . forms import UserCreateForm, PostPictureForm, ProfileEditForm, CommentForm
-from . models import UserProfile, IGPost, Comment, Like, Message, Room
+from .forms import UserCreateForm, PostPictureForm, ProfileEditForm, CommentForm, SettingsForm, BackgroundThemeForm
+from .models import UserProfile, IGPost, Comment, Like, Message, Room, BackgroundTheme, SettingsModel
 
 
-def index(request):
-    if not request.user.is_authenticated():
-        redirect('login')
+class BackgroundView(ListView):
+    model = BackgroundTheme
 
-    # Only return posts from users that are being followed, test this later
-    # for performance / improvement
-    users_followed = request.user.userprofile.following.all()
-    posts = IGPost.objects.filter(
-                user_profile__in=users_followed).order_by('-posted_on')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        signed_in_user = self.request.user
+        if signed_in_user.is_authenticated:
+            context['Background'] = BackgroundTheme.objects.filter(is_active=1, user=signed_in_user)
+            # Ensure you retrieve the correct UserProfile object for the signed-in user
+            context['user_profile'] = UserProfile.objects.filter(user=signed_in_user).first()
+        return context
 
-    return render(request, 'feeds/index.html', {
-        'posts': posts
-    })
+    # Function-based view for the index page
+    def index(request):
+        if not request.user.is_authenticated:
+            return redirect('login')
+
+        posts = []
+        user_profile = None
+        if hasattr(request.user, 'userprofile'):
+            users_followed = request.user.userprofile.following.all()
+            posts = IGPost.objects.filter(user_profile__in=users_followed).order_by('-posted_on')
+            user_profile = request.user.userprofile
+
+        username = request.user.username if request.user.is_authenticated else None
+
+        context = {
+            'username': username,
+            'posts': posts,
+            'user_profile': user_profile,
+        }
+
+        return render(request, 'feeds/index.html', context)
 
 
 def explore(request):
@@ -174,6 +199,82 @@ def profile_settings(request, username):
         'form': form
     }
     return render(request, 'feeds/profile_settings.html', context)
+
+
+@login_required
+def profile_settings(request, username):
+    user = User.objects.get(username=username)
+    if request.user != user:
+        return redirect('index')
+
+    if request.method == 'POST':
+        print(request.POST)
+        form = ProfileEditForm(request.POST, instance=user.userprofile, files=request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect(reverse('profile', kwargs={'username': user.username}))
+    else:
+        form = ProfileEditForm(instance=user.userprofile)
+
+    context = {
+        'user': user,
+        'form': form
+    }
+    return render(request, 'feeds/profile_settings.html', context)
+
+
+class SettingsView(RegularUserRequiredMixin, UserPassesTestMixin, FormView):
+    """Only allow registered users to change their settings."""
+    model = SettingsModel
+    form_class = SettingsForm
+    template_name = "feeds/account_settings.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_settings = self.request.user.settings
+
+        context['username'] = self.request.user.username
+        context['password'] = SettingsModel.password
+        context['email'] = SettingsModel.email
+        return context
+
+    def get_success_url(self):
+        # Get the username of the current user
+        username = self.request.user.username
+        # Redirect to the profile URL with the username as part of the path
+        return reverse_lazy('profile', kwargs={'username': username})
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+
+def background_theme_create(request):
+    if request.method == 'POST':
+        form = BackgroundThemeForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Set the user automatically before saving
+            background_theme = form.save(commit=False)
+            background_theme.user = request.user  # Assuming the user is logged in
+            background_theme.save()
+            return redirect('themelist')  # Replace with your success URL
+    else:
+        form = BackgroundThemeForm()
+
+    return render(request, 'feeds/mythemes.html', {'form': form})
+
+
+class BackgroundThemeListView(ListView):
+    model = BackgroundTheme
+    template_name = "feeds/themelist.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        signed_in_user = self.request.user
+        if signed_in_user.is_authenticated:
+            context['theme'] = BackgroundTheme.objects.filter(is_active=1, user=signed_in_user)
+            # Ensure you retrieve the correct UserProfile object for the signed-in user
+            context['user_profile'] = UserProfile.objects.filter(user=signed_in_user).first()
+        return context
 
 
 def followers(request, username):
@@ -334,3 +435,8 @@ def follow_toggle(request):
         'type': request.POST.get('type'),
         'follow_profile_pk': follow_profile_pk
     }
+
+@login_required
+def notifications_view(request):
+    notifications = Notification.objects.filter(recipient=request.user)
+    return render(request, 'notifications.html', {'notifications': notifications})
