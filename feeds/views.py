@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView
@@ -57,13 +57,21 @@ class BackgroundView(ListView):
         return render(request, 'feeds/index.html', context)
 
 
-def explore(request):
-    random_posts = IGPost.objects.all().order_by('?')[:40]
+class ExploreView(ListView):
+    model = BackgroundTheme
+    template_name = "feeds/explore.html"
 
-    context = {
-        'posts': random_posts
-    }
-    return render(request, 'feeds/explore.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        signed_in_user = self.request.user
+
+        if signed_in_user.is_authenticated:
+            context['theme'] = BackgroundTheme.objects.filter(is_active=1, user=signed_in_user)
+            context['user_profile'] = UserProfile.objects.filter(user=signed_in_user).first()
+
+        # Add random posts (reverse order handled in template)
+        context['posts'] = IGPost.objects.all().order_by('?')[:40]
+        return context
 
 
 @login_required
@@ -277,6 +285,28 @@ class BackgroundThemeListView(ListView):
         return context
 
 
+from django.shortcuts import get_object_or_404
+
+
+def set_current_theme(request, pk):
+    # Check if the request is an AJAX request and if it's a POST method
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' and request.method == 'POST':
+        # Get the theme by ID and ensure it's for the current user
+        theme = get_object_or_404(BackgroundTheme, pk=pk, user=request.user)
+
+        # Set all other themes for the user to currently_set=False
+        BackgroundTheme.objects.filter(user=request.user).update(currently_set=False)
+
+        # Set the selected theme to currently_set=True
+        theme.currently_set = True
+        theme.save()
+
+        # Return a JSON response indicating success
+        return JsonResponse({'success': True, 'currently_set_theme_id': theme.id})
+
+    return JsonResponse({'success': False}, status=400)
+
+
 def followers(request, username):
     user = User.objects.get(username=username)
     user_profile = UserProfile.objects.get(user=user)
@@ -302,7 +332,6 @@ def following(request, username):
     return render(request, 'feeds/follow_list.html', context)
 
 
-
 @login_required
 def post_picture(request):
     if request.method == 'POST':
@@ -322,26 +351,48 @@ def post_picture(request):
     }
     return render(request, 'feeds/post_picture.html', context)
 
+class PostsView(ListView):
+    model = BackgroundTheme
+    template_name = "feeds/post.html"
 
-def post(request, pk):
-    post = IGPost.objects.get(pk=pk)
-    try:
-        like = Like.objects.get(post=post, user=request.user)
-        liked = 1
-    except:
-        like = None
-        liked = 0
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        signed_in_user = self.request.user
 
-    context = {
-        'post': post,
-        'liked': liked
-    }
-    return render(request, 'feeds/post.html', context)
+        # Handle user profile and theme
+        if signed_in_user.is_authenticated:
+            context['theme'] = BackgroundTheme.objects.filter(is_active=True, user=signed_in_user)
+            context['user_profile'] = UserProfile.objects.filter(user=signed_in_user).first()
+
+        # Add the post, liked functionality, and comment count
+        post_id = self.kwargs.get('pk')  # Assuming 'pk' is passed in the URL
+        if post_id:
+            post = IGPost.objects.get(pk=post_id)
+            try:
+                like = Like.objects.get(post=post, user=signed_in_user)
+                liked = 1
+            except Like.DoesNotExist:
+                liked = 0
+
+            # Get comment count for the post
+            comment_count = Comment.objects.filter(post=post).count()
+
+            context['post'] = post
+            context['liked'] = liked
+            context['comment_count'] = comment_count
+
+        return context
+
+
+def get_comment_count(request, post_id):
+    post = get_object_or_404(IGPost, pk=post_id)
+    comment_count = Comment.objects.filter(post=post).count()
+    return JsonResponse({'comment_count': comment_count})
 
 
 def likes(request, pk):
-    #likes = IGPost.objects.get(pk=pk).like_set.all()
-    #profiles = [like.user.userprofile for like in likes]
+    # likes = IGPost.objects.get(pk=pk).like_set.all()
+    # profiles = [like.user.userprofile for like in likes]
 
     post = IGPost.objects.get(pk=pk)
     profiles = Like.objects.filter(post=post)
@@ -394,7 +445,6 @@ def add_comment(request):
             'comment_text': comment_text
         }
 
-
         result = 1
     except Exception as e:
         print(e)
@@ -435,6 +485,7 @@ def follow_toggle(request):
         'type': request.POST.get('type'),
         'follow_profile_pk': follow_profile_pk
     }
+
 
 @login_required
 def notifications_view(request):

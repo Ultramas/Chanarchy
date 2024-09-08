@@ -3,23 +3,114 @@
 {% load static %}
 {% block content %}
 {% if user.is_authenticated %}
-<br>
-  <h1 style="text-align: center;">My Background Themes</h1>
-<br>
-<div class="row justify-content-center" id="explore" style="margin-left: 250px; margin-right: 250px;">
-    {% for BackgroundTheme in theme %}
-      <div class="col-xs-12 col-sm-6 col-md-4 mb-4" style="padding: 0 15px 30px;">
-        {% if BackgroundTheme.currently_set %}
-      <div class="picture-square" style="background-image: url({{ BackgroundTheme.cover.url }}); background-size: cover;">
-        {% else %}
-      <div class="picture-square" style="background-image: url({{ BackgroundTheme.cover.url }}); background-size: cover; filter: brightness(60%);">
-      {% endif %}
-          <div class="content">{{BackgroundTheme.backgroundtitle}}</div>
+<head>
+<style>
 
+.content-wrapper {
+  background-color: rgba(0, 0, 0, 0) !important;
+  @media screen and (max-width : 768px) {
+    margin-top: 50px;
+  }
+}
+</style>
+</head>
+
+{% for BackgroundTheme in theme %}
+      {% if BackgroundTheme.currently_set %}
+<body style="background-image: url({{ BackgroundTheme.cover.url }}); background-size: cover;">
+{% else %}
+<body>
+{% endif %}
+{% endfor %}
+
+<div style="background-color: rgba(0, 0, 0, 0) !important;">
+<br>
+  <h1 style="text-align: center; color: white; text-shadow: 2px 2px black;" id="theme-id">My Background Themes</h1>
+<br>
+
+    <div class="row justify-content-center" id="explore" style="margin-left: 250px; margin-right: 250px;">
+  {% for BackgroundTheme in theme %}
+    <div class="col-xs-12 col-sm-6 col-md-4 mb-4 theme-item"
+         data-theme-id="{{ BackgroundTheme.id }}"
+         data-cover-url="{{ BackgroundTheme.cover.url }}"
+         style="padding: 0 15px 30px;">
+      {% if BackgroundTheme.currently_set %}
+        <div class="picture-square" style="background-image: url({{ BackgroundTheme.cover.url }}); background-size: cover;">
+      {% else %}
+        <div class="picture-square" style="background-image: url({{ BackgroundTheme.cover.url }}); background-size: cover; filter: brightness(60%);">
+      {% endif %}
+        <div class="content">{{ BackgroundTheme.backgroundtitle }}</div>
       </div>
     </div>
-          {% endfor %}
+  {% endfor %}
+</div>
+
+
       </div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script type="text/javascript">
+  $(document).ready(function() {
+    $('.theme-item').on('click', function() {
+      var themeId = $(this).data('theme-id');
+
+      $.ajax({
+        type: 'POST',
+        url: '/set-current-theme/' + themeId + '/',  // The URL for your view
+        data: {
+          csrfmiddlewaretoken: '{{ csrf_token }}'  // CSRF token for security
+        },
+        success: function(response) {
+          if (response.success) {
+            // Handle the success: update the UI, remove brightness, etc.
+            $('.theme-item').css('filter', 'brightness(60%)');  // Reset all themes
+            $('div[data-theme-id="' + response.currently_set_theme_id + '"]').css('filter', '');  // Highlight the current theme
+          }
+        },
+        error: function(response) {
+          alert('An error occurred while updating the theme.');
+        }
+      });
+    });
+  });
+
+
+  $(document).ready(function() {
+    // Listen for clicks on the theme item
+    $('.theme-item').on('click', function() {
+      var themeId = $(this).data('theme-id');  // Get the theme ID from the clicked element
+
+      // AJAX request to set the selected theme
+      $.ajax({
+        type: 'POST',
+        url: '/set-current-theme/' + themeId + '/',  // The URL for your view
+        data: {
+          csrfmiddlewaretoken: '{{ csrf_token }}'  // CSRF token for security
+        },
+        success: function(response) {
+          if (response.success) {
+            // Update the page background immediately to the new theme's cover
+            var selectedTheme = $('div[data-theme-id="' + response.currently_set_theme_id + '"]');
+            var newBackgroundUrl = selectedTheme.data('cover-url');
+
+            // Update the body background dynamically
+            $('body').css('background-image', 'url(' + newBackgroundUrl + ')');
+            $('body').css('background-size', 'cover');
+
+            // Optionally, remove the filter on the newly selected theme and apply it to others
+            $('.theme-item').css('filter', 'brightness(60%)');  // Dim all themes
+            selectedTheme.css('filter', '');  // Brighten the currently selected theme
+          }
+        },
+        error: function(response) {
+          alert('An error occurred while updating the theme.');
+        }
+      });
+    });
+  });
+</script>
+
+</div>
 </div>
 {% endif %}
 {% endblock %}

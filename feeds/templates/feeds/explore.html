@@ -3,16 +3,32 @@
 {% block content %}
 <head>
 <style>
+
+.content-wrapper {
+  background-color: rgba(0, 0, 0, 0) !important;
+  @media screen and (max-width : 768px) {
+    margin-top: 50px;
+  }
+}
 </style>
 </head>
 
-<body>
+
+{% if user.is_authenticated %}
+        {% for BackgroundTheme in theme %}
+{% if BackgroundTheme.file %}
+<body style="background: url('{{BackgroundTheme.file.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover; background-repeat: no-repeat;">
+        {% else %}
+<body style="background: url('{{BackgroundTheme.cover.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover; background-repeat: no-repeat;">
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+<div class="row justify-content-center" style="margin-left: 250px; margin-right: 250px; background-color: rgba(0, 0, 0, 0);">
 <br>
 <br>
 
 <br>
 <br>
-<div class="row justify-content-center" id="explore" style="margin-left: 250px; margin-right: 250px;">
   {% for post in posts reversed %}
     <div class="col-xs-12 col-sm-6 col-md-4 mb-4" style="padding: 0 15px 30px;">
       <div class="picture-square" style="background-image: url({{ post.image.url }}); background-size: cover;">

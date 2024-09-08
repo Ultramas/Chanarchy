@@ -3,8 +3,58 @@
 {% load static custom_tags %}
 
 {% block content %}
+<head>
+
+<style>
+
+.content-wrapper {
+  background-color: rgba(0, 0, 0, 0) !important;
+  @media screen and (max-width : 768px) {
+    margin-top: 50px;
+  }
+}
+
+  .single-post-card {
+    height: 200%;
+    background: linear-gradient(rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.6)) !important;
+}
+.card__main-image {
+    max-width: 90%;
+    max-height: 550px;
+    height: auto;
+    margin: 0 auto;
+    display: block;
+}
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function updateCommentCount(postId) {
+        $.ajax({
+            url: `/post/${postId}/comment_count/`,
+            method: 'GET',
+            success: function(response) {
+                $('#comment-count').text(response.comment_count + ' Comments');
+            }
+        });
+    }
+
+    // Call updateCommentCount every 5 seconds
+    var postId = "{{ post.id }}";  // Assuming 'post.id' is available in the template
+    setInterval(function() {
+        updateCommentCount(postId);
+    }, 500);  // Update every 0.5 seconds
+</script>
+</head>
+{% for BackgroundTheme in theme %}
+      {% if BackgroundTheme.currently_set %}
+<body style="background-image: url({{ BackgroundTheme.cover.url }}); background-size: cover;">
+{% else %}
+<body>
+{% endif %}
+{% endfor %}
+
 <div class="row single-post">
-  <div class="single-post-card view-update {{ post.pk }}">
+  <div class="single-post-card view-update {{ post.pk }}" style="height: 100vh;">
     <div class="header">
       <a href="{% url 'profile' post.user_profile.user.username %}">
         {% if post.user_profile.profile_pic %}
@@ -15,13 +65,8 @@
         {{ post.user_profile.user.username }}
       </a>
           <span class="comment" style="margin-left: 10px; font-size: 20px;">{{ post.title | parse_hashtags | safe }}</span>
-    </div>
-    <div class="image__wrapper">
-      <img class="card__main-image" src="{{ post.image.url }}">
-    </div>
 
-    <div class="comments-portion">
-      <div class="likes-timestamp-row">
+      <div class="likes-timestamp-row" style="margin-top: 100px;">
         <div class="likes">
           <a href="{% url 'likes' post.pk %}">
             {% if post.get_number_of_likes %}
@@ -34,6 +79,12 @@
             {{ post.posted_on|timesince }}
         </div>
       </div>
+    </div>
+    <div class="image__wrapper">
+      <img class="card__main-image" src="{{ post.image.url }}" style="height: 100vh;">
+    </div>
+
+    <div class="comments-portion" style="margin-bottom: 10%;">
       <br>
       <ul class="comment-list">
         <li class="comment-list__comment">
@@ -50,7 +101,9 @@
         </li>
       <br>
         <hr>
-      <h4 style="justify-content: center;">Comments</h4>
+      <h4 style="justify-content: center;" id="comment-count"> Comments</h4>
+
+
         {% for comment in post.comment_set.all %}
           <li class="comment-list__comment">
             <a href="{% url 'profile' comment.user.username %}" class="user">
@@ -79,4 +132,5 @@
     </div>
   </div>
 </div>
+</body>
 {% endblock %}

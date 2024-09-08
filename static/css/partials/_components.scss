@@ -3,11 +3,12 @@ html {
 }
 body {
   min-height: 100%;
-  background-color: #fafafa;
+  /*background-color: #fafafa;
   &.white {
     background-color: #fff;
     .content-wrapper { background-color: #fff; }
-  }
+  }*/
+  background-color: rgba(0, 0, 0, 0) !important;
 }
 
 a:hover {
@@ -17,7 +18,8 @@ a:hover {
 .content-wrapper {
   margin-top: 57px;
   margin-bottom: 60px;
-  background-color: #fafafa;
+  /*background-color: #fafafa;*/
+  background-color: rgba(0, 0, 0, 0) !important;
   @media screen and (max-width : 768px) {
     margin-top: 50px;
   }
