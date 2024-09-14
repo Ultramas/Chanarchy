@@ -5,7 +5,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 
 from imagekit.forms import ProcessedImageField
 
-from .models import IGPost, UserProfile, Comment, Like, SettingsModel
+from .models import IGPost, UserProfile, Comment, Like, SettingsModel, Community
 
 
 class UserCreateForm(UserCreationForm):
@@ -36,9 +36,35 @@ class ProfileEditForm(ModelForm):
 
 
 class SettingsForm(forms.ModelForm):
+    username = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Your Username'}))
+    password = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Your Password'}))
+    email = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Your Email'}))
+
     class Meta:
         model = SettingsModel
         fields = ('username', 'password', 'email')
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.user = self.instance.user
+        if commit:
+            instance.save()
+        return instance
+
+
+class CreateCommunityForm(forms.ModelForm):
+    name = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Name Your Community'}))
+    cover_image = forms.ImageField()
+    description = forms.CharField(widget=forms.Textarea(attrs={'placeholder': 'Describe Your Community!'}))
+
+    # Add the checkbox fields with required=False
+    public = forms.BooleanField(required=False)
+    no_profanity = forms.BooleanField(required=False)
+    nsfw_inclusive = forms.BooleanField(required=False)
+
+    class Meta:
+        model = Community
+        fields = ('name', 'cover_image', 'description', 'public', 'no_profanity', 'nsfw_inclusive')
 
     def save(self, commit=True):
         instance = super().save(commit=False)

@@ -25,6 +25,12 @@
     margin: 0 auto;
     display: block;
 }
+    .comment {
+  white-space: normal; /* This allows the text to wrap onto the next line */
+  word-wrap: break-word; /* Break long words if needed */
+  overflow: hidden;
+}
+
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -52,6 +58,24 @@
 <body>
 {% endif %}
 {% endfor %}
+<script>
+  function toggleDescription() {
+    var shortDescription = document.getElementById("short-description");
+    var fullDescription = document.getElementById("full-description");
+    var readMore = document.getElementById("read-more");
+
+    if (fullDescription.style.display === "none") {
+      shortDescription.style.display = "none";
+      fullDescription.style.display = "inline";
+      readMore.innerText = "Read less"; // Change button text
+    } else {
+      shortDescription.style.display = "inline";
+      fullDescription.style.display = "none";
+      readMore.innerText = "Read more"; // Change button text
+    }
+  }
+</script>
+
 
 <div class="row single-post">
   <div class="single-post-card view-update {{ post.pk }}" style="height: 100vh;">
@@ -65,43 +89,36 @@
         {{ post.user_profile.user.username }}
       </a>
           <span class="comment" style="margin-left: 10px; font-size: 20px;">{{ post.title | parse_hashtags | safe }}</span>
+<br>
+<br>
 
-      <div class="likes-timestamp-row" style="margin-top: 100px;">
-        <div class="likes">
-          <a href="{% url 'likes' post.pk %}">
-            {% if post.get_number_of_likes %}
-              {{ post.get_number_of_likes }} Like{% if post.get_number_of_likes > 1 %}s{% endif %}
-            {% endif %}
-          </a>
-        </div>
-        <div class="timestamp">
-            {{ post.posted_on }}<br>
-            {{ post.posted_on|timesince }}
-        </div>
-      </div>
     </div>
-    <div class="image__wrapper">
+      <div class="secondheader" style="position: absolute; margin-left: 82%; margin-top: 70px; white-space: normal;
+  word-wrap: break-word;
+  overflow: hidden;">
+          <span class="comment" style="margin-top: 50px;">
+  <span id="short-description">
+    {{ post.description|truncatechars:200 }}
+  </span>
+  <span id="full-description" style="display: none;">
+    {{ post.description }}
+  </span>
+  <a href="javascript:void(0);" id="read-more" onclick="toggleDescription()" style="text-decoration: none;">Read more</a>
+</span>
+
+          <br>
+          <br>
+  </div>
+    <div class="image__wrapper" style="margin-top: 8%;">
       <img class="card__main-image" src="{{ post.image.url }}" style="height: 100vh;">
     </div>
 
     <div class="comments-portion" style="margin-bottom: 10%;">
+      <hr>
       <br>
-      <ul class="comment-list">
-        <li class="comment-list__comment">
-          <a class="user" href="{% url 'profile' post.user_profile.user.username %}">
-            {% if post.user_profile.profile_pic %}
-          <img class="picture-circle--medium" src="{{ post.user_profile.profile_pic.url }}" style="margin-right: 5px;">
-        {% else %}
-          <img class="picture-circle--medium" src="{% static 'images/profile_placeholder.jpg' %}" style="margin-right: 5px;">
-        {% endif %}
-            {{ post.user_profile.user.username }}
-          </a>
-          <br>
-          <span class="comment">{{ post.description }}</span>
-        </li>
-      <br>
-        <hr>
       <h4 style="justify-content: center;" id="comment-count"> Comments</h4>
+      <ul class="comment-list" class="comment-list" style="max-height: 300px; overflow-y: auto;">
+
 
 
         {% for comment in post.comment_set.all %}
@@ -118,6 +135,20 @@
           </li>
         {% endfor %}
       </ul>
+      <div class="likes-timestamp-row" style="margin-top: 50px;">
+        <hr style="margin-bottom: 20px;">
+        <div class="likes">
+          <a href="{% url 'likes' post.pk %}">
+            {% if post.get_number_of_likes %}
+              {{ post.get_number_of_likes }} Like{% if post.get_number_of_likes > 1 %}s{% endif %}
+            {% endif %}
+          </a>
+        </div>
+        <div class="timestamp">
+            {{ post.posted_on }}<br>
+            {{ post.posted_on|timesince }}
+        </div>
+      </div>
       {% if request.user.is_authenticated %}
         <section class="input-row">
           <i class="fa {% if liked %}fa-heart{% else %}fa-heart-o{% endif %} submit-like" aria-hidden="true"></i>

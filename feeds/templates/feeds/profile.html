@@ -3,6 +3,25 @@
 {% load static custom_tags %}
 
 {% block content %}
+<head>
+  <style>
+  .content-wrapper {
+    margin-top: 57px;
+    margin-bottom: 60px;
+    background-color: rgba(70, 70, 70, 0.6);
+    </style>
+}
+</head>
+{% if user.is_authenticated %}
+        {% for BackgroundTheme in Background %}
+<body style="background: url('{{BackgroundTheme.cover.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover;">
+
+        {% endfor %}
+        {% else %}
+<body style="">
+
+{% endif %}
+
 <div class="profile">
   <div class="profile__head">
     <div class="row">
@@ -15,7 +34,7 @@
       </div>
       <div class="col-xs-8 right">
         <div class="name-buttons">
-          <h1 class="username">{{ user.username }}</h1>
+          <h1 class="username" style="color: white;">{{ user.username }}</h1>
           {% if request.user == user %}
             <a class="edit-desktop" href="{% url 'profile_settings' user.username %}">
               <button class="edit-profile">Edit Profile</button>
@@ -57,15 +76,15 @@
         <div class="desktop-block">
           <ul class="stats">
             {% if profile.igpost_set.count == 1 %}
-              <li class="stats__count"><span>{{ profile.igpost_set.count }}</span> Post</li>
+              <li class="stats__count" style="color: white;"><span>{{ profile.igpost_set.count }}</span> Post</li>
             {% else %}
-              <li class="stats__count"><span>{{ profile.igpost_set.count }}</span> Posts</li>
+              <li class="stats__count" style="color: white;"><span>{{ profile.igpost_set.count }}</span> Posts</li>
             {% endif %}
-              <a href="{% url 'followers' username=profile.user.username %}"><li class="stats__count"><span>{{ profile.get_number_of_followers }}</span> Followers</li></a>
-              <a href="{% url 'following' username=profile.user.username %}"><li class="stats__count"><span>{{ profile.get_number_of_following }}</span> Following</li></a>
+              <a href="{% url 'followers' username=profile.user.username %}" style="color: white;"><li class="stats__count"><span>{{ profile.get_number_of_followers }}</span> Followers</li></a>
+              <a href="{% url 'following' username=profile.user.username %}" style="color: white;"><li class="stats__count"><span>{{ profile.get_number_of_following }}</span> Following</li></a>
           </ul>
           <div class="description">
-            <p>{% if profile.description %}{{ profile.description }}{% endif %}</p>
+            <p style="color: white;">{% if profile.description %}{{ profile.description }}{% endif %}</p>
           </div>
         </div>
       </div>
@@ -100,5 +119,5 @@
   </div>
 
 </div>
-
+</body>
 {% endblock %}

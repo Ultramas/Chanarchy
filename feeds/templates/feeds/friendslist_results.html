@@ -1,0 +1,10 @@
+{% if friends %}
+{% for friend in friends %}
+        <div class="friend">
+            <img src="{{ friend.friend.userprofile.profile_pic.url }}" alt="{{ friend.friend.username }}'s profile picture" style="width: 50px; height: 50px; border-radius: 50px;">
+            <p>{{ friend.friend.username }}</p>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No friends found matching your search.</p>
+{% endif %}

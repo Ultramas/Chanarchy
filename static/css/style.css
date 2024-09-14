@@ -278,7 +278,11 @@ a:hover {
     display: block; }
   .card__panel-body {
     padding: 20px;
-    padding-bottom: 0; }
+    padding-bottom: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-bottom: 0;
+    }
     .card__panel-body a {
       color: #333; }
     .card__panel-body .likes {

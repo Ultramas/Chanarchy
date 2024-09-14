@@ -1,0 +1,86 @@
+{% extends 'feeds/base.html' %}
+
+{% block content %}
+<head>
+<style>
+
+.content-wrapper {
+  background-color: rgba(0, 0, 0, 0) !important;
+  @media screen and (max-width : 768px) {
+    margin-top: 50px;
+  }
+}
+</style>
+</head>
+
+
+{% if user.is_authenticated %}
+        {% for BackgroundTheme in theme %}
+{% if BackgroundTheme.file %}
+<body style="background: url('{{BackgroundTheme.file.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover; background-repeat: no-repeat; background-attachment: fixed;">
+        {% else %}
+<body style="background: url('{{BackgroundTheme.cover.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover; background-repeat: no-repeat; background-attachment: fixed;">
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+<div class="row justify-content-center" style="margin-left: 250px; margin-right: 250px; background-color: rgba(0, 0, 0, 0);">
+<br>
+<br>
+
+<br>
+<br>
+  <div class="profile__body">
+      <h1 style="text-align: center; color: white;">Discover Communities</h1>
+    <div class="row">
+  {% for post in server reversed %}
+    <div class="col-xs-12 col-sm-6 col-md-4 mb-4" style="padding: 0 15px 30px;">
+     <div class="picture-square" style="background-image: url({{ post.cover_image.url }}); background-size: cover; position: relative; display: flex; justify-content: center; align-items: center; height: 330px; width: 330px;">
+  <h2 style="color: white; text-align: center;">{{post.name}}</h2>
+  <a href="{{post.invite}}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+    <div class="content"></div>
+  </a>
+</div>
+
+    </div>
+  {% endfor %}
+</div>
+    </div>
+  </div>
+<div class="create_community" style="position: fixed; display: flex; flex-direction: row; bottom: 0px; background: rgba(255, 255, 255, 0.6); width: 100%; height: 15%;">
+
+    <ul>
+     <li style="text-decoration: none; margin-left: 25%; display: flex; position: absolute;">
+          <a href="{% url 'create_community' %}">
+            <span class="material-symbols-outlined" style="text-decoration: none; left: 50px; bottom: 10px;">
+            add_circle
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 20px; text-decoration: none; left: 50px; bottom: 10px; font-family: 'Audiowide';">
+            Create A Community
+            </span>
+          </a>
+        </li>
+        <li style="text-decoration: none; margin-left: 45%; display: flex; position: absolute;">
+          <a href="{% url 'mycommunities' %}">
+            <span class="material-symbols-outlined" style="text-decoration: none; left: 50px; bottom: 10px;">
+            communities
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 20px; text-decoration: none; left: 50px; bottom: 10px; font-family: 'Audiowide';">
+            My Communities
+            </span>
+          </a>
+        </li>
+        <li style="text-decoration: none; margin-left: 65%; display: flex; position: absolute;">
+          <a href="{% url 'mycommunities' %}">
+            <span class="material-symbols-outlined" style="text-decoration: none; left: 50px; bottom: 10px;">
+            group
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 20px; text-decoration: none; left: 50px; bottom: 10px; font-family: 'Audiowide';">
+            My Friends
+            </span> <!--friends are followers who you follow back-->
+          </a>
+        </li>
+    </ul>
+</div>
+
+</body>
+{% endblock %}

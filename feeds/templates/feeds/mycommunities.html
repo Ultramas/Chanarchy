@@ -25,23 +25,25 @@
 
 <div style="background-color: rgba(0, 0, 0, 0) !important;">
 <br>
-  <h1 style="text-align: center; color: white; text-shadow: 2px 2px black;" id="theme-id">My Background Themes</h1>
+  <h1 style="text-align: center; color: white; text-shadow: 2px 2px black;" id="theme-id">My Communities</h1>
 <br>
 
     <div class="row justify-content-center" id="explore" style="margin-left: 250px; margin-right: 250px;">
-  {% for BackgroundTheme in theme %}
+  {% for Community in mycommunities %}
+      <a href="{{Community.invite}}">
     <div class="col-xs-12 col-sm-6 col-md-4 mb-4 theme-item"
-         data-theme-id="{{ BackgroundTheme.id }}"
-         data-cover-url="{{ BackgroundTheme.cover.url }}"
+         data-theme-id="{{ Community.id }}"
+         data-cover_image-url="{{ Community.cover_image.url }}"
          style="padding: 0 15px 30px;">
-      {% if BackgroundTheme.currently_set %}
-        <div class="picture-square" style="background-image: url({{ BackgroundTheme.cover.url }}); background-size: cover;">
+      {% if Community.currently_set %}
+        <div class="picture-square" style="background-image: url({{ Community.cover_image.url }}); background-size: cover;">
       {% else %}
-        <div class="picture-square" style="background-image: url({{ BackgroundTheme.cover.url }}); background-size: cover; filter: brightness(60%);">
+        <div class="picture-square" style="background-image: url({{ Community.cover_image.url }}); background-size: cover; filter: brightness(60%);">
       {% endif %}
-        <div class="content">{{ BackgroundTheme.backgroundtitle }}</div>
+        <div class="content">{{ Community.name }}</div>
       </div>
     </div>
+      </a>
   {% endfor %}
 </div>
 

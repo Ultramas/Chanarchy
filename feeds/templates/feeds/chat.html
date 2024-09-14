@@ -1,29 +1,718 @@
-{% extends 'feeds/base.html' %}
-
 {% load static %}
 
-{% block body_class_override %}white{% endblock %}
-{% block content %}
-  <div id="messages">
-    {% for message in messages %}
-      <div class="{% if request.user == message.sender %}message-sent{% else %}message-received{% endif %}">
-        {% if request.user != message.sender %}<div class="sender">{{ message.sender.username }}</div>{% endif %}
-        <div class="text">{{ message.text }}</div>
-      </div>
-    {% endfor %}
-  </div>
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Chat</title>r
+		<!-- Bootstrap -->
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" >
+		<!-- Font awesome -->
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" >
+		<!-- CSS -->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/chathome.css' %}">
+<style>
 
-  <form id="chatForm">
-    <div id="chatData" style="display: none">
-      <span id="session-key">{{ request.session.session_key }}</span>
-      <span id="user">{{ request.user.username }}</span>
+button[type="submit"] {
+    background-color: rgba(0, 0, 0, 0.4);
+    color: white;
+    height: 35px;
+    margin-top: 20px;
+    margin-right: 0px;
+    margin-top: 0px;
+    border: none;
+    box-shadow: none;
+    padding: 0 10px;  /* Adjust padding as needed */
+    border-radius: 0px 8px 8px 0px; /* Top-left, Top-right, Bottom-right, Bottom-left */
+    cursor: pointer;
+}
+
+button[type="submit"]:hover {
+    transition-duration: 0.5s;
+    display: inline-block;
+    padding: 5 5px;
+    font-size: 24px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    outline: none;
+    color: #fff;
+    background-color: rgba(0, 0, 0, 0.4);
+    border: none;
+    border-radius: 15px;
+    }
+</style>
+
+
+{% for room in rooms_with_logo_same_name %}
+    <title>{{ room.name }}</title>
+{% endfor %}
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+
+.chat-container {
+  background-color: rgba(0, 0, 0, 0);
+  border-radius: 5px;
+  padding: 20px;
+  max-width: 800px;
+  padding: 0 20px;
+  margin: 0 auto; /* This centers the element horizontally */
+  background-color: #f1f1f1;
+}
+
+.chat-container .message {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.chat-container .avatar img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.chat-container .message .message-content {
+  flex-grow: 1;
+  background-color: #f7f7f7;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.chat-container .message .message-content .sender {
+  font-weight: bold;
+}
+
+.chat-container .message .message-content .time {
+  font-size: 12px;
+  color: #999;
+}
+
+.chat-input {
+  background-color: #f7f7f7;
+  padding: 20px;
+  border-radius: 5px;
+}
+
+.chat-input input[type="text"] {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.chat-input input[type="submit"] {
+  width: 100%;
+  background-color: #4CAF50;
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.username-room{
+background-color: rgba(102, 102, 102, 0.06);
+margin-bottom: 22px;
+  border-radius: 5px;
+padding-top: 36px;
+padding-bottom: 52px;
+    }
+
+.combined-input {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+#file-label {
+    position: absolute;
+    right: 1px;
+    top: 50%;
+    background: rgba(255, 215, 0, 1);
+    padding: 6.5px;
+    border-radius: 4px;
+    transform: translateY(-62%);
+    cursor: pointer;
+}
+
+</style>
+    <link rel='stylesheet' type='text/css' media='screen' href="{% static 'css/lightbox.css' %}">
+    {% if current_theme %}
+    {% if current_theme.file %}
+        <style>
+            body {
+        background-image: url("{{ current_theme.file.url }}");
+        background-size: cover;
+        background-attachment: fixed;
+            }
+        </style>
+    {% else %}
+        <p>Error: Current theme does not have an image.</p>
+    {% endif %}
+{% else %}
+{% endif %}
+<script src="https://code.jquery.com/jquery-3.1.1.min.js" integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8=" crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+
+
+
+  {% block javascript %}
+    <script src="{% static 'css/js/script.js' %}"></script>
+    <script src="{% static 'css/js/darkmode.js' %}"></script>
+    <script src="{% static 'css/js/navbar.js' %}"></script>
+    <script src="{% static 'css/js/scroll.js' %}"></script>
+    <script src="{% static 'css/js/cover.js' %}"></script>
+  {% endblock javascript %}
+
+    <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+
+
+<script>
+$(document).ready(function(){
+  // Preload avatars
+  var avatarUrls = [];
+  $(".message img").each(function() {
+    avatarUrls.push($(this).attr("src"));
+  });
+
+  preloadImages(avatarUrls);
+
+  setInterval(function(){
+    var room = "{{ room }}"; // Replace with the actual value of the room
+
+    $.ajax({
+      type: 'GET',
+      url : "/getMessages/" + room + "/",
+      success: function(response){
+        console.log(response);
+        $("#display").empty();
+        for (var key in response.messages) {
+          var message = response.messages[key];
+          var user_profile_url = message.user_profile_url;
+          var avatar_url = message.avatar_url; // Store avatar_url in a separate variable
+          var user = message.user; // Store user in a separate variable
+          var value = message.value; // Store value in a separate variable
+          var imageUrl = message.file; // Store file_url in a separate variable
+          var date = message.date; // Store date in a separate variable
+          var message_number = message.message_number;
+
+          console.log(user_profile_url);
+          var messageHtml = `
+            <div class="message" id="#${message_number}">
+              <a href="${user_profile_url}">
+                <img style="width: 40px; height: 40px; border-radius: 50px;" src="${avatar_url}" alt="${user}">
+              </a>
+              <div class="message-content">
+                <div class="sender">${user}</div>
+                <div>${value}</div>`;
+
+                if (imageUrl) {  // Check if imageUrl exists
+                    messageHtml += `<a href="${imageUrl}" data-lightbox="image-1"><img id="myImg" style="max-width: 600px; max-height: 600px;" src="${imageUrl}" alt="Uploaded file"></a>`;
+                }
+
+
+          messageHtml += `
+                <div class="time">${date}</div>
+              </div>
+            </div>`;
+
+          console.log(user_profile_url);
+          $("#display").append(messageHtml);
+        }
+      },
+      error: function(response){
+        alert('An error occurred');
+      }
+    });
+  }, 0500);
+});
+
+// Preload images
+function preloadImages(urls) {
+  for (var i = 0; i < urls.length; i++) {
+    var img = new Image();
+    img.src = urls[i];
+  }
+}
+
+
+</script>
+
+
+<script type="text/javascript">
+$(document).on('submit', '#post-form', function(e) {
+  e.preventDefault();
+
+  // Create a new FormData object to send both text and file data
+  var formData = new FormData();
+  formData.append('username', $('#username').val());
+  formData.append('room_id', $('#room_id').val());
+  formData.append('room_name', $('#room_name').val());
+  formData.append('message', $('#message').val());
+  formData.append('csrfmiddlewaretoken', $('input[name=csrfmiddlewaretoken]').val());
+
+  // Append the file input to the FormData object if a file is selected
+  var fileInput = $('#file')[0];
+  if (fileInput.files.length > 0) {
+    formData.append('file', fileInput.files[0]);
+  }
+
+  $.ajax({
+    type: 'POST',
+    url: '/new_chat/send',
+    data: formData,
+    contentType: false,  // Prevent jQuery from setting a content type
+    processData: false,  // Prevent jQuery from processing the data
+    success: function(data) {
+       // Handle the success response here
+    }
+  });
+
+  // Clear the message input and file input
+  document.getElementById('message').value = '';
+  document.getElementById('file').value = ''; // Reset the file input
+
+  // Add further handling if needed
+});
+</script>
+
+<script>
+function scrollToBottom() {
+  const chatContainer = document.querySelector('.chat-container'); // Replace with your actual selector
+  if (chatContainer) {
+    setTimeout(() => {
+      chatContainer.scrollTop = chatContainer.scrollHeight - chatContainer.clientHeight;
+    }, 10); // Add a slight delay (adjust as needed)
+  }
+}
+
+// Call scrollToBottom on page load and after receiving new messages
+scrollToBottom();
+</script>
+
+    <script src="{% static 'css/js/script.js' %}"></script>
+    <script src="{% static 'css/js/darkmode.js' %}"></script>
+    <script src="{% static 'css/js/navbar.js' %}"></script>
+    <script src="{% static 'css/js/scroll.js' %}"></script>
+    <script src="{% static 'css/js/lightbox.js' %}"></script>
+
+<script>
+    function copyToClipboard() {
+        const roomUrl = window.location.href;  // Get the current room URL
+        const input = document.createElement('textarea');
+        input.value = roomUrl;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+
+        // Show "Link Copied" message
+        const copyMessage = document.getElementById('copy-message');
+        copyMessage.style.display = 'inline';
+        setTimeout(() => {
+            copyMessage.style.display = 'none';
+        }, 2000);  // Hide the message after 2 seconds
+    }
+
+$(document).ready(function(){
+    // Change the background color of the file label when a file is selected
+    $('#file').change(function() {
+        if ($(this).val()) {
+            $('#file-label').css('background-color', 'yellowgreen');
+        } else {
+            $('#file-label').css('background-color', 'gold');
+        }
+    });
+
+    // Change the background color of the file label back to gold when the form is submitted
+    $('#post-form').submit(function() {
+        $('#file-label').css('background-color', 'gold');
+    });
+});
+</script>
+
+
+
+  <h1 style="text-align: center; margin-top: 150px; margin-bottom: -170px; color: rgba(255, 255, 255, 0.5); ">{{user.username}} - {{room}}</h1>
+
+</div>
+
+
+		<div class="container-fluid h-100">
+			<div class="row justify-content-center h-100">
+				<div class="col-md-4 col-xl-3 chat"><div class="card mb-sm-3 mb-md-0 contacts_card">
+					<div class="card-header">
+						<form action="{% url 'new_chat' %}" method="get">
+                            <div class="input-group">
+                                <input type="text" placeholder="Search..." name="search" class="form-control search" style="height: 35px;">
+                                <div class="input-group-prepend">
+                                    <button type="submit" style="margin-left: 0px; margin-top: 5px;">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+					</div>
+					<div class="card-body contacts_body">
+						<ul class="contacts">
+
+  {% if search_results %}
+     {% for friend in search_results %}
+
+      									{% if friend.currently_active %}
+              <li class="active" style="padding-top: 12px;">
+                  {% else %}
+                  <li>
+                  {% endif %}
+
+          <div class="d-flex bd-highlight">
+              <div class="img_cont">
+                  {% if friend.profile_picture_url %}
+
+                      <a href="{{ friend.user_profile_url }}">
+                          <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img">
+                      <span class="online_icon"></span>
+                      </a>
+                  {% endif %}
+              </div>
+              <div class="user_info">
+                  <span>{{ friend.username }}</span>
+                  {% if friend.online == True %}
+                      <p>Online</p>
+                  {% else %}
+                      <p>Offline</p>
+                  {% endif %}
+              </div>
+          </div>
+      </li>
+
+    {% endfor %}
+{% else %}
+  {% for friend in item_list %}
+
+									{% if friend.currently_active %}
+              <li class="active" style="padding-top: 12px;">
+                  {% else %}
+                  <li>
+                  {% endif %}
+
+          <div class="d-flex bd-highlight">
+              <div class="img_cont">
+                  {% if friend.profile_picture_url %}
+                      <a href="{{ friend.user_profile_url }}">
+                          <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img">
+                      <span class="online_icon"></span>
+                      </a>
+                  {% endif %}
+              </div>
+              <div class="user_info">
+                  <span>{{ friend.username }}</span>
+                  {% if friend.online == True %}
+                      <p>Online</p>
+                  {% else %}
+                      <p>Offline</p>
+                  {% endif %}
+              </div>
+          </div>
+      </li>
+              {% empty %}
+                  {% for friend in friends_data %}
+                  {% if friend.currently_active %}
+              <li class="active" style="padding-top: 12px;">
+                  {% else %}
+                  <li>
+                  {% endif %}
+          <div class="d-flex bd-highlight">
+              <div class="img_cont">
+                  {% if friend.profile_picture_url %}
+                      <a href="{{ friend.user_profile_url }}">
+                          <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img">
+                      <span class="online_icon"></span>
+                      </a>
+                  {% endif %}
+              </div>
+              <div class="user_info">
+                  <span>{{ friend.username }}</span>
+                  {% if friend.online == True %}
+                      <p>Online</p>
+                  {% else %}
+                      <p>Offline</p>
+                  {% endif %}
+              </div>
+          </div>
+      </li>
+  {% empty %}
+      <h2>No friends found.</h2>
+  {% endfor %}
+  {% endfor %}
+{% endif %}
+
+
+						</ul>
+					</div>
+					<div class="card-footer"></div>
+				</div></div>
+				<div class="col-md-8 col-xl-6 chat">
+					<div class="card">
+						<div class="card-header msg_head">
+							<div class="d-flex bd-highlight">
+								<div class="img_cont">
+
+						{% for friend in friends_data %}
+                            {% if friend.currently_active %}
+    					        {% if friend.profile_picture_url %}
+                        <a href="{{ friend.user_profile_url }}">
+           				 	<img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img">
+									<span class="online_icon"></span>
+						</a>
+								</div>
+								<div class="user_info">
+									<span>{{ friend.username }}</span>
+									{% if friend.online == True %}
+									<p>Online</p>
+									{% else %}
+									<p>Offline</p>
+									{% endif %}
+									{% endif %}
+									{% endif %}
+									{% endfor %}
+								</div>
+
+								<div class="user_info">
+						            {% for Friend in Friends %}
+									<span>{{Friend.friend}}</span>
+									<p>1767 Messages</p>
+									{% endfor %}
+								</div>
+								<div class="video_cam">
+									<span><i class="fas fa-video"></i></span>
+									<span><i class="fas fa-phone"></i></span>
+								</div>
+							</div>
+							<span id="action_menu_btn"><i class="fas fa-ellipsis-v"></i></span>
+							<div class="action_menu">
+								<ul>
+									<li><i class="fas fa-user-circle"></i> View profile</li>
+									<li><i class="fas fa-users"></i> Add to close friends</li>
+									<li><i class="fas fa-plus"></i> Add to group</li>
+									<li><i class="fas fa-ban"></i> Block</li>
+								</ul>
+							</div>
+						</div>
+						<div class="card-body msg_card_body">
+
+    <div class="column three mobile-twelve section_header_logo vertical-align-middle"
+        style="position: -webkit-sticky; position: sticky; top: 10px; left: -10px; z-index: 100;">
+
+
     </div>
-    <input type="text" id="messageInput" placeholder="Write a message...">
+
+
+  <div class="backgroundimages" style="background: url(''); background-size: cover; min-height: 140vh;">
+
+
+
+<script>
+    function copyToClipboard() {
+        const roomUrl = window.location.href;  // Get the current room URL
+        const input = document.createElement('textarea');
+        input.value = roomUrl;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+
+        // Show "Link Copied" message
+        const copyMessage = document.getElementById('copy-message');
+        copyMessage.style.display = 'inline';
+        setTimeout(() => {
+            copyMessage.style.display = 'none';
+        }, 2000);  // Hide the message after 2 seconds
+    }
+
+$(document).ready(function(){
+    // Change the background color of the file label when a file is selected
+    $('#file').change(function() {
+        if ($(this).val()) {
+            $('#file-label').css('background-color', 'yellowgreen');
+        } else {
+            $('#file-label').css('background-color', 'gold');
+        }
+    });
+
+    // Change the background color of the file label back to gold when the form is submitted
+    $('#post-form').submit(function() {
+        $('#file-label').css('background-color', 'gold');
+    });
+});
+</script>
+
+
+<div class="chat-container" id="chat-container" style="background-color: rgba(0, 0, 0, 0);">
+<br>
+
+  <div id="display"></div>
+  <div class="chat-input" style="margin-left: 5.5%; width: 94.5%;">
+  <form id="post-form" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="username" id="username" value="{{user.username}}" />
+    <input type="hidden" name="room_id" id="room_id" value="{{room}}" />
+      <div class="combined-input">
+    <input type="text" name="message" id="message" placeholder="Type your message or choose a file..." />
+    <input type="file" name="file" id="file" style="display: none;">  <!-- Add this line -->
+        <label for="file" id="file-label">📎</label>
+</div>
+
+    <input type="submit" value="Send">
   </form>
 
-{% endblock %}
+  </div>
+<br>
+</div>
+<br>
+<br>
 
 
-{% block extrascript %}
-<script src="{% static 'js/inbox.js' %}"></script>
-{% endblock %}
+<script type="text/javascript">
+$(document).ready(function() {
+    console.log("Document is ready");
+
+    // Function to load and display messages
+    function loadAndDisplayGeneralMessages() {
+        console.log("Loading and displaying messages");
+        $.ajax({
+            type: 'GET',
+            url: '/getMessages/',
+            success: function(response) {
+                console.log("Messages fetched successfully:", response);
+                $("#display-general").empty();
+                response.messages.forEach(function(message) {
+                    var messageHtml = `
+                        <div class="message">
+                            <a href="${message.user_profile_url}">
+                                <img src="${message.avatar_url}" alt="${message.user}" style="width: 50px; height: 50px; border-radius: 25px; padding: 5px;">
+                            </a>
+                            <div class="message-content" style="padding: 5px;">
+                                <div class="sender">${message.user}</div>
+                                <div>${message.value}</div>
+                                <div class="time">${message.date}</div>
+                            </div>
+                        </div>`;
+                    $("#display-general").append(messageHtml);
+                });
+            },
+            error: function(response) {
+                console.error("Error fetching messages:", response);
+                alert('An error occurred while fetching messages.');
+            }
+        });
+    }
+
+    // Function to send message via AJAX
+    $(document).on('submit', '#general-post-form', function(e) {
+        e.preventDefault(); // Prevent default form submission
+        console.log("Form submitted");
+
+        let messageContent = $('#message').val().trim();
+        let username = $('#username').val();
+        let roomId = $('#room_name').val();
+        let pageName = $('#page_name').val();
+        let csrfToken = $('input[name=csrfmiddlewaretoken]').val();
+
+        console.log("Message Content:", messageContent);
+        console.log("Username:", username);
+        console.log("Room ID:", roomId);
+        console.log("Page Name:", pageName);
+
+        if (!messageContent) {
+            alert('Message cannot be empty');
+            return;
+        }
+
+        $.ajax({
+            type: 'POST',
+            url: '{% url "send" %}', // Use Django's URL template tag
+            data: {
+                username: username,
+                room_id: roomId,
+                message: messageContent,
+                csrfmiddlewaretoken: csrfToken,
+                page_name: pageName
+            },
+            success: function(data) {
+                console.log('Message sent successfully:', data); // Log success response
+                $('#message').val('');  // Clear the input field after submitting
+                loadAndDisplayGeneralMessages(); // Reload messages after posting
+            },
+            error: function(xhr, status, error) {
+                console.error('Error sending message:', error); // Log error
+            }
+        });
+    });
+
+    // Load and display messages initially and then every 500 milliseconds
+    loadAndDisplayGeneralMessages();
+    setInterval(loadAndDisplayGeneralMessages, 500);
+    console.log("Message loading set to every 500ms");
+});
+
+// Preload images function
+function preloadImages(urls) {
+    console.log("Preloading images");
+    for (var i = 0; i < urls.length; i++) {
+        var img = new Image();
+        img.src = urls[i];
+        console.log("Image preloaded:", urls[i]);
+    }
+}
+</script>
+
+
+
+    <script src="{% static 'css/js/script.js' %}"></script>
+    <script src="{% static 'css/js/darkmode.js' %}"></script>
+    <script src="{% static 'css/js/navbar.js' %}"></script>
+    <script src="{% static 'css/js/scroll.js' %}"></script>
+    <script src="{% static 'css/js/lightbox.js' %}"></script>
+
+
+  </div>
+
+
+<script>
+  // Scroll to the bottom of the chat container
+  function scrollToBottom() {
+    var chatContainer = document.querySelector('.chat-container');
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+
+  // Scroll to the bottom after page refresh
+  window.onload = function () {
+    scrollToBottom();
+  };
+</script>
+
+
+						</div>
+						<div class="card-footer">
+
+
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	<!-- JQuery -->
+     <script type="text/javascript" src="{% static 'css/js/chat.js' %}"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	</body>
+</html>
+

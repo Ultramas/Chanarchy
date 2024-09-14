@@ -1,0 +1,75 @@
+{% extends 'feeds/base.html' %}
+
+{% block content %}
+<head>
+
+<style>
+
+.content-wrapper {
+  background-color: rgba(0, 0, 0, 0) !important;
+  @media screen and (max-width : 768px) {
+    margin-top: 50px;
+  }
+}
+</style>
+</head>
+
+
+{% if user.is_authenticated %}
+        {% for BackgroundTheme in theme %}
+{% if BackgroundTheme.file %}
+<body style="background: url('{{BackgroundTheme.file.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover; background-repeat: no-repeat; background-attachment: fixed;">
+        {% else %}
+<body style="background: url('{{BackgroundTheme.cover.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover; background-repeat: no-repeat; background-attachment: fixed;">
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+<div class="row justify-content-center" style="margin-left: 250px; margin-right: 250px; background-color: rgba(0, 0, 0, 0);">
+<br>
+<br>
+
+<br>
+<br>
+  <div class="profile__body">
+      <h1 style="text-align: center; color: white;">Discover Communities</h1>
+
+<form method="GET" action="{% url 'friend_search' %}">
+    <input type="text" name="search" placeholder="Search friends..." value="{{ search_term }}">
+    <button type="submit">Search</button>
+</form>
+
+
+
+    <div class="row" style="display: flex; flex-direction: column; position: absolute; margin-left: 70%; background: rgba(0, 0, 0, 0.4);
+    padding: 5px; top: 55px;">
+    <h2>Search Results:</h2>
+
+  <div id="friend-results">
+    {% include 'feeds/friendslist_results.html' %}
+  </div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      $('#friend-search').on('input', function() {
+        var searchTerm = $(this).val();
+
+        $.ajax({
+          url: '{% url "friend-search" %}',  // Replace with the URL for the search view
+          data: {
+            'search': searchTerm
+          },
+          dataType: 'json',
+          success: function(data) {
+            $('#friend-results').html(data.html);  // Update the friend results with the new HTML
+          }
+        });
+      });
+    });
+  </script>
+
+</div>
+    </div>
+</div>
+</body>
+{% endblock %}

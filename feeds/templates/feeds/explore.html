@@ -10,6 +10,26 @@
     margin-top: 50px;
   }
 }
+
+.title-overlay {
+    display: none;
+    position: absolute;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    width: 100%;
+    text-align: center;
+    padding: 10px;
+}
+
+.picture-square:hover .title-overlay {
+    display: block;
+}
+
+.picture-square {
+    position: relative;
+}
+
 </style>
 </head>
 
@@ -17,9 +37,9 @@
 {% if user.is_authenticated %}
         {% for BackgroundTheme in theme %}
 {% if BackgroundTheme.file %}
-<body style="background: url('{{BackgroundTheme.file.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover; background-repeat: no-repeat;">
+<body style="background: url('{{BackgroundTheme.file.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover; background-repeat: no-repeat; background-attachment: fixed;">
         {% else %}
-<body style="background: url('{{BackgroundTheme.cover.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover; background-repeat: no-repeat;">
+<body style="background: url('{{BackgroundTheme.cover.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover; background-repeat: no-repeat; background-attachment: fixed;">
         {% endif %}
         {% endfor %}
         {% endif %}
@@ -27,18 +47,25 @@
 <br>
 <br>
 
+      <h1 style="color: white; text-align: center;">My Feed</h1>
 <br>
 <br>
-  {% for post in posts reversed %}
-    <div class="col-xs-12 col-sm-6 col-md-4 mb-4" style="padding: 0 15px 30px;">
-      <div class="picture-square" style="background-image: url({{ post.image.url }}); background-size: cover;">
-        <a href="{% url 'post' post.pk %}">
-          <div class="content"></div>
-        </a>
-      </div>
+<div class="profile__body">
+    <div class="row">
+        {% for post in posts reversed %}
+            <div class="col-xs-12 col-sm-6 col-md-4 mb-4" style="padding: 0 15px 30px;">
+                <div class="picture-square" style="background-image: url({{ post.image.url }}); background-size: cover;">
+                    <a href="{% url 'post' post.pk %}">
+                        <div class="content"></div>
+                    </a>
+                    <div class="title-overlay">{{ post.title }}</div>
+                </div>
+            </div>
+        {% endfor %}
     </div>
-  {% endfor %}
 </div>
+
+  </div>
 
 </body>
 {% endblock %}

@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 <style>
 
 body{
@@ -106,6 +107,11 @@ display: block;
   color: #fff;
 }
 
+.notifications li a:hover{
+  background: #1bd030;
+  color: #fff;
+}
+
 .sidebar ul .material-icons-outlined{
   font-size: 1.6em;
   margin-right: 0.5em;
@@ -185,9 +191,95 @@ hr {
   font-weight: 400;
   font-style: normal;
 }
+.navbar-default .navbar-brand {
+    color: #555;
+}
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24
+}
+/* Style the navigation menu */
+.topnav {
+    overflow: hidden;
+    background-color: #333;
+    position: relative;
+}
+
+/* Hide the links inside the navigation menu (except for logo/home) */
+.topnav #myLinks {
+    display: none;
+}
+
+
+.hamburger {
+    font-size: 30px;
+    cursor: pointer;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+    z-index: 5000;
+}
+
+.hamburger {
+    font-size: 30px;
+    cursor: pointer;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 1000;
+}
+
+.sidebar-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 250px;
+    transform: translateX(0);
+    transition: transform 0.3s ease;
+    background-color: #333;
+    color: white;
+    overflow-y: auto;
+}
+
+.sidebar-container.hidden {
+    transform: translateX(-100%);
+}
+
+.username {
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  display: inline-block;
+  text-overflow: ellipsis;
+}
+
+
 
 </style>
 </head>
+<body>
+<script>
+function toggleSidebar() {
+    const sidebarContainer = document.querySelector('.sidebar-container');
+    sidebarContainer.classList.toggle('hidden');
+}
+window.onload = function() {
+  const usernameElement = document.getElementById('username');
+  let fontSize = 16; // Starting font size in pixels
+  const maxWidth = 150; // Maximum width in pixels
+
+  while (usernameElement.scrollWidth > maxWidth && fontSize > 0) {
+    fontSize -= 0.5; // Decrease font size incrementally
+    usernameElement.style.fontSize = fontSize + 'px';
+  }
+};
+
+</script>
 
 <div class="navbar navbar-default navbar-fixed-top" id="main-nav" style="background-color: rgba(255, 255, 255, 0.9);">
       <div class="container desktop">
@@ -284,7 +376,9 @@ hr {
   <nav class="sidebar">
 
     <div>
-        <img src="../static/images/logo.png" style="margin-top: -95%; width: 200px; height: 160px;">
+          <a href="{% url 'index' %}">
+       <img src="{% static 'images/logo.png' %}" style="margin-top: -95%; width: 200px; height: 160px;">
+          </a>
       <hr/>
         <br>
         <br>
@@ -329,15 +423,37 @@ hr {
           </a>
         </li>
         <li>
-         <a href="{% url 'index' %}">
+         <a href="{% url 'discover' %}">
             <span class="material-symbols-outlined">
-             Overview
+            travel_explore
             </span>
-            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
-            To-Do
+            <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+            Find Communities
             </span>
           </a>
         </li>
+        <li>
+        <li>
+         <a href="{% url 'mycommunities' %}">
+            <span class="material-symbols-outlined">
+             communities
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 17px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+            My Communities
+            </span>
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'create_community' %}">
+            <span class="material-symbols-outlined">
+            Overview
+            </span>
+            <span class="material-symbols-outlined" style="font-size: 15px; margin-left: 5px; margin-top: 0px; font-family: 'Audiowide';">
+            Create Community
+            </span>
+          </a>
+        </li>
+
         <li>
           <a href="{% url 'notifications' %}">
             <span class="material-symbols-outlined">
@@ -355,16 +471,6 @@ hr {
             </span>
             <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 0px; font-family: 'Audiowide';">
             Create Post
-            </span>
-          </a>
-        </li>
-        <li>
-          <a href="{% url 'index' %}">
-            <span class="material-symbols-outlined">
-            photo_camera
-            </span>
-            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 0px; font-family: 'Audiowide';">
-            Record Post
             </span>
           </a>
         </li>
@@ -456,19 +562,31 @@ hr {
             </div>
             <span class="badge">24</span>
           </a>
+            <a href="#">
+            <div>
+              <span class="material-symbols-outlined">
+              contact_support
+              </span>
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+            Support
+            </span>
+
+            </div>
+            <span class="badge">18</span>
+          </a>
         </li>
       </ul>
       <div class="profileclass">
         <a href="{% url 'profile' user.username %}">
         {% if user_profile.profile_pic %}
-          <img class="picture-circle" src="{{ user_profile.profile_pic.url }}">
+          <img class="picture-circle" style="margin-right: 40px;" src="{{ user_profile.profile_pic.url }}">
         {% else %}
-          <img class="picture-circle" src="{% static 'images/profile_placeholder.jpg' %}">
+          <img class="picture-circle" style="margin-right: 40px;" src="{% static 'images/profile_placeholder.jpg' %}">
         {% endif %}
 
         </a>
         <div>
-          <h3 style="margin-left: -40px;">{{user.username}}</h3>
+          <h3 class="username" style="margin-left: -40px;">{{user.username}}</h3>
             </div>
             <span class="material-icons-outlined">
             </span>
@@ -541,11 +659,15 @@ hr {
             </div>
         {% endfor %}
     </div>
-
-  <nav class="sidebar">
-
-    <div>
-        <img src="../static/images/logo.png" style="margin-top: -95%; width: 200px; height: 160px;">
+   <button class="hamburger" onclick="toggleSidebar()">☰</button>
+    <h1>32erwsfdgerww
+    </h1>
+<div class="sidebar-container hidden">
+    <nav class="sidebar">
+        <div>
+            <a href="{% url 'index' %}">
+                <img src="../static/images/logo.png" style="margin-top: -95%; width: 200px; height: 160px;">
+            </a>
       <hr/>
         <br>
         <br>
@@ -697,11 +819,13 @@ hr {
       <div class="profileclass">
           <img class="picture-circle" src="{% static 'images/profile_placeholder.jpg' %}">
         <div>
-          <h3 style="margin-left: -40px;">{{user.username}}</h3>
+          <h3 class="username" style="margin-left: -40px;" >{{user.username}}</h3>
             </div>
             <span class="material-icons-outlined">
             </span>
       </div>
     </div>
   </nav>
+    </div>
+</body>
 {% endif %}

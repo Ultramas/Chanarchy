@@ -97,9 +97,6 @@ form input[type=button]:active {
 form:hover {
   margin: 4px;
 }
-.form-control {
-    margin-left: 15px;
-}
 
 ::-moz-placeholder {
   font-family: Montserrat, sans-serif;
@@ -197,35 +194,56 @@ button:focus {
 <body class="white" style="background: url('';  alt=''; background-size: cover; background-repeat: no-repeat;">
 <div class="container">
 <div class="row auth-form">
+<br>
+<br>
+<br>
   <div class="col-xs-12">
-    <form action="{% url 'signup' %}" method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <div class="form-group" style="display: flex;">
-          {{ form.username.label }}
-          {{ form.username|addClass:"form-control" }}
-          {{ form.username.errors }}
-        </div>
-        <div class="form-group" style="display: flex;">
-          {{ form.email.label }}
-          {{ form.email|addClass:"form-control" }}
-          {{ form.email.errors }}
-        </div>
-        <div class="form-group" style="display: flex;">
-          {{ form.password1.label }}
-          {{ form.password1|addClass:"form-control" }}
-          {{ form.password1.errors }}
-        </div>
-        <div class="form-group" style="display: flex;">
-          <h5 style="color: rgba(58, 58, 58, 1);">Confirmation</h5>
-          {{ form.password2|addClass:"form-control" }}
-          {{ form.password2.errors }}
-        </div>
+<form method="POST" enctype="multipart/form-data">
+    <h3 class="label" style="margin-top: -15px; font-size: 24px; color: rgba(255, 255, 255, 0.8); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);">Create Your Community</h3>
+<br><br>
 
-        <button class="btn btn-default">Register</button>
-        <div class="text-center help-text">
-          Already have an account? <a href="{% url 'login' %}">Login</a>
-        </div>
-    </form>
+    {% csrf_token %}
+
+    <!-- Title field -->
+    <div class="form-group" style="display: flex;">
+        <label for="{{ form.name.id_for_label }}" style="margin-right: 20px;">Title:</label>
+        {{ form.name }}
+    </div>
+
+    <!-- Cover Image field -->
+    <div class="form-group" style="display: flex;">
+        <label for="{{ form.cover_image.id_for_label }}" style="margin-right: 20px;">Cover Image:</label>
+        {{ form.cover_image }}
+    </div>
+
+    <!-- File (non-image) field -->
+    <div class="form-group" style="display: flex;">
+        <label for="{{ form.description.id_for_label }}" style="margin-right: 20px;">Description:</label>
+        {{ form.description }}
+    </div>
+
+    <!-- File (non-image) field -->
+    <div class="form-group" style="display: flex;">
+        <label for="{{ form.public.id_for_label }}" style="margin-right: 20px;">Public:</label>
+        <label class="custom-checkbox">{{ form.public }}</label>
+    </div>
+
+
+    <div class="form-group" style="display: flex;">
+        <label for="{{ form.public.id_for_label }}" style="margin-right: 20px;">No Profanity:</label>
+        <label class="custom-checkbox">{{ form.no_profanity }}</label>
+    </div>
+
+
+    <div class="form-group" style="display: flex;">
+        <label for="{{ form.public.id_for_label }}" style="margin-right: 20px;">NSFW Inclusive:</label>
+        <label class="custom-checkbox">{{ form.nsfw_inclusive }}</label>
+    </div>
+
+    <!-- Submit Button -->
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>
+
   </div>
 </div>
     <div class="drops">
