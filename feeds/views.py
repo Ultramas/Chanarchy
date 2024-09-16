@@ -23,7 +23,8 @@ from notifications.models import Notification
 
 from .forms import UserCreateForm, PostPictureForm, ProfileEditForm, CommentForm, SettingsForm, BackgroundThemeForm, \
     CreateCommunityForm
-from .models import UserProfile, IGPost, Comment, Like, Message, Room, BackgroundTheme, SettingsModel, Community, Friend
+from .models import UserProfile, IGPost, Comment, Like, Message, Room, BackgroundTheme, SettingsModel, Community, \
+    Friend, DefaultAvatar, DirectMessages
 
 
 class BackgroundView(ListView):
@@ -345,9 +346,9 @@ def new_chat_create(request, username):
     room_label = request.user.username + '_' + user_to_message.username
 
     try:
-        does_room_exist = Room.objects.get(label=room_label)
+        does_room_exist = DirectMessages.objects.get(label=room_label)
     except:
-        room = Room(label=room_label, receiver=user_to_message,
+        room = DirectMessages(label=room_label, receiver=user_to_message,
                     sender=request.user)
         room.save()
 
@@ -1048,12 +1049,29 @@ class NewRoomSettingsView(LoginRequiredMixin, TemplateView):
         return render(request, self.template_name, {'form': form})
 
 
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+
+
+def send_post_to_friend(request, post_id, room_name):
+    post = get_object_or_404(IGPost, id=post_id)
+    room = get_object_or_404(Room, name=room_name)
+
+    if request.user in room.members.all() or room.public:
+        room.shared_posts.add(post)  # Add the post to the room
+        messages.success(request, f'Post "{post.title}" sent to {room.name}')
+    else:
+        messages.error(request, 'You are not allowed to send a post to this room.')
+
+    return redirect('showcase:room', room=room.name)
+
+
 def getMessages(request, room):
     try:
         room_details = Room.objects.get(name=room)
     except Room.DoesNotExist:
         return JsonResponse({'messages': []})
-
+    shared_posts = room.shared_posts.all()
     messages = Message.objects.filter(room=room_details)
     messages_data = []
     for message in messages:
@@ -1073,6 +1091,7 @@ def getMessages(request, room):
             'date': message.date.strftime("%Y-%m-%d %H:%M:%S"),
             'message_number': message.message_number,
             'file': message.file.url if message.file else None,
+            'shared_posts': shared_posts,
         }
         messages_data.append(message_data)
 

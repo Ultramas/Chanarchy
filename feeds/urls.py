@@ -46,6 +46,7 @@ urlpatterns = [
     re_path(r'^new_chat/checkview', views.checkview, name='checkview'),
     re_path(r'^new_chat/send', views.send, name='send'),
     re_path(r'^getMessages/<str:room>/', views.getMessages, name='getMessages'),
+    re_path(r'^send_post_to_friend/(?P<post_id>\d+)/(?P<room_name>[\w-]+)/$', views.send_post_to_friend, name='send_post_to_friend'),
     #re_path(r'^send/', views.send, name='send-message'),
     re_path(r'^post/(?P<pk>\d+)/likes/$', views.likes, name='likes'),
     re_path(r'^like/$', views.add_like, name='like'),

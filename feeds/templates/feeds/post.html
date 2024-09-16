@@ -149,6 +149,12 @@
             {{ post.posted_on|timesince }}
         </div>
       </div>
+
+      <form action="{% url 'showcase:send_post_to_friend' post.id room.name %}" method="POST">
+    {% csrf_token %}
+    <button type="submit">Send to Room</button>
+</form>
+
       {% if request.user.is_authenticated %}
         <section class="input-row">
           <i class="fa {% if liked %}fa-heart{% else %}fa-heart-o{% endif %} submit-like" aria-hidden="true"></i>
