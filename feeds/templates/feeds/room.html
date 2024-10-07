@@ -1,11 +1,14 @@
-{% load static %}
+{% extends 'feeds/base.html' %}
+
+{% load static custom_tags %}
+
+{% block content %}
 
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Chat</title>r
+		<title>Chat</title>
 		<!-- Bootstrap -->
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" >
 		<!-- Font awesome -->
 		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" >
 		<!-- CSS -->
@@ -43,8 +46,8 @@ button[type="submit"]:hover {
 </style>
 
 
-{% for label in labels_with_logo_same_name %}
-    <title>{{ label.name }}</title>
+{% for room in rooms_with_logo_same_name %}
+    <title>{{ room.name }}</title>
 {% endfor %}
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -114,7 +117,7 @@ button[type="submit"]:hover {
   margin-top: 10px;
 }
 
-.username-label{
+.username-room{
 background-color: rgba(102, 102, 102, 0.06);
 margin-bottom: 22px;
   border-radius: 5px;
@@ -138,6 +141,39 @@ padding-bottom: 52px;
     transform: translateY(-62%);
     cursor: pointer;
 }
+
+.friend-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+.action_menu {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 100%; /* Position to the right of the friend-item */
+    background-color: #fff;
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 1000;
+    white-space: nowrap;
+}
+
+/* Show the action menu when hovering over the friend-item or the menu itself */
+.friend-item:hover .action_menu,
+.friend-item .action_menu:hover {
+    display: block;
+}
+
+.friend-item .user_info {
+    cursor: pointer;
+}
+
+
 
 </style>
     <link rel='stylesheet' type='text/css' media='screen' href="{% static 'css/lightbox.css' %}">
@@ -163,6 +199,7 @@ padding-bottom: 52px;
 
 
 
+
   {% block javascript %}
     <script src="{% static 'css/js/script.js' %}"></script>
     <script src="{% static 'css/js/darkmode.js' %}"></script>
@@ -172,6 +209,7 @@ padding-bottom: 52px;
   {% endblock javascript %}
 
     <link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">
+
 
 <script>
 $(document).ready(function(){
@@ -183,77 +221,63 @@ $(document).ready(function(){
 
   preloadImages(avatarUrls);
 
-  // Set interval to fetch messages every 500 milliseconds (adjust as needed)
   setInterval(function(){
-    var label = "{{ label }}";  // Ensure this is properly passed from Django template
+    var room = "{{ room }}"; // Replace with the actual value of the room
 
-    if (label) {
-      $.ajax({
-        type: 'GET',
-        url : "/getDirectMessages/" + label + "/",  // Fetch messages by room label
-        success: function(response){
-          console.log(response);  // Log the response for debugging
-          $("#display").empty();  // Clear existing messages
+    $.ajax({
+      type: 'GET',
+      url : "/getMessages/" + room + "/",
+      success: function(response){
+        console.log(response);
+        $("#display").empty();
+        for (var key in response.messages) {
+          var message = response.messages[key];
+          var user_profile_url = message.user_profile_url;
+          var avatar_url = message.avatar_url; // Store avatar_url in a separate variable
+          var user = message.user; // Store user in a separate variable
+          var value = message.value; // Store value in a separate variable
+          var imageUrl = message.file; // Store file_url in a separate variable
+          var date = message.date; // Store date in a separate variable
+          var message_number = message.message_number;
 
-          // Loop through each message in the response
-          for (var key in response.messages) {
-            var message = response.messages[key];
-            var user_profile_url = message.user_profile_url;
-            var avatar_url = message.avatar_url;
-            var user = message.user;
-            var value = message.value;
-            var imageUrl = message.file;
-            var date = message.date;
-            var message_number = message.message_number;
+          console.log(user_profile_url);
+          var messageHtml = `
+            <div class="message" id="#${message_number}">
+              <a href="${user_profile_url}">
+                <img style="width: 40px; height: 40px; border-radius: 50px;" src="${avatar_url}" alt="${user}">
+              </a>
+              <div class="message-content">
+                <div class="sender">${user}</div>
+                <div>${value}</div>`;
 
-            // Build the HTML structure for each message
-            var messageHtml = `
-              <div class="message" id="${message_number}">
-                <a href="${user_profile_url}">
-                  <img style="width: 40px; height: 40px; border-radius: 50px;" src="${avatar_url}" alt="${user}">
-                </a>
-                <div class="message-content">
-                  <div class="sender">${user}</div>
-                  <div>${value}</div>`;
+                if (imageUrl) {  // Check if imageUrl exists
+                    messageHtml += `<a href="${imageUrl}" data-lightbox="image-1"><img id="myImg" style="max-width: 600px; max-height: 600px;" src="${imageUrl}" alt="Uploaded file"></a>`;
+                }
 
-            // Check if the message includes a file (image or other)
-            if (imageUrl) {
-              messageHtml += `
-                <a href="${imageUrl}" data-lightbox="image-1">
-                  <img id="myImg" style="max-width: 600px; max-height: 600px;" src="${imageUrl}" alt="Uploaded file">
-                </a>`;
-            }
 
-            messageHtml += `
-                  <div class="time">${date}</div>
-                </div>
-              </div>`;
+          messageHtml += `
+                <div class="time">${date}</div>
+              </div>
+            </div>`;
 
-            // Append the generated HTML to the display div
-            $("#display").append(messageHtml);
-          }
-
-          // Initialize lightbox if using it for images
-          if (typeof lightbox !== 'undefined') {
-            lightbox.reload();
-          }
-        },
-        error: function(response){
-          console.error('An error occurred while fetching messages:', response);
-          alert('An error occurred while fetching messages.');
+          console.log(user_profile_url);
+          $("#display").append(messageHtml);
         }
-      });
-    }
-  }, 500);  // Set a valid interval in milliseconds (500ms)
-
-  // Function to preload images
-  function preloadImages(urls) {
-    for (var i = 0; i < urls.length; i++) {
-      var img = new Image();
-      img.src = urls[i];
-    }
-  }
+      },
+      error: function(response){
+        alert('An error occurred');
+      }
+    });
+  }, 0500);
 });
+
+// Preload images
+function preloadImages(urls) {
+  for (var i = 0; i < urls.length; i++) {
+    var img = new Image();
+    img.src = urls[i];
+  }
+}
 
 
 </script>
@@ -262,12 +286,11 @@ $(document).ready(function(){
 <script type="text/javascript">
 $(document).on('submit', '#post-form', function(e) {
   e.preventDefault();
-  console.log("Label:", label);
 
   // Create a new FormData object to send both text and file data
   var formData = new FormData();
   formData.append('username', $('#username').val());
-  formData.append('label_id', $('#label_id').val());
+  formData.append('room_id', $('#room_id').val());
   formData.append('room_name', $('#room_name').val());
   formData.append('message', $('#message').val());
   formData.append('csrfmiddlewaretoken', $('input[name=csrfmiddlewaretoken]').val());
@@ -319,9 +342,9 @@ scrollToBottom();
 
 <script>
     function copyToClipboard() {
-        const labelUrl = window.location.href;  // Get the current label URL
+        const roomUrl = window.location.href;  // Get the current room URL
         const input = document.createElement('textarea');
-        input.value = labelUrl;
+        input.value = roomUrl;
         document.body.appendChild(input);
         input.select();
         document.execCommand('copy');
@@ -352,22 +375,46 @@ $(document).ready(function(){
 });
 </script>
 
+{% for Room in Background %}
+{% if Room.page == 'room.html' %}
+  <body class="backgroundimages" style="background: url('{{Room.cover.url}}'); background-size: cover; min-height: 140vh;">
+  {% else %}
+  <body class="backgroundimages" style="background: #7F7FD5; background: -webkit-linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5);
+  background: linear-gradient(to right, #91EAE4, #86A8E7, #7F7FD5);">
+      {% endif %}
+{% endfor %}
+
+{% if community and community.banner %}
+  <div class="community-banner">
+    <img src="{{ community.banner.url }}" alt="Community Banner">
+  </div>
+{% endif %}
 
 
-  <h1 style="text-align: center; margin-top: 150px; margin-bottom: -170px; color: rgba(255, 255, 255, 0.5); ">{{user.username}} - {{label}}</h1>
+      {% for room in rooms_with_logo_same_name %}
+        {% if room.logo %}
+            <img src="{{ room.logo.url }}" alt="{{ room.name }} logo" style="width: 22vh; height: 14.5vh; padding: 0px; margin-top: -40px;">
+        {% else %}
+            <p></p>
+        {% endif %}
+{% endfor %}
+
+
 
 </div>
 
 
-		<div class="container-fluid h-100">
+		<div class="container-fluid h-100" style="background: linear-gradient(rgba(0, 0, 255, 0.8), rgba(0, 255, 0, 0.8)); padding-top; 30px;">
 			<div class="row justify-content-center h-100">
-				<div class="col-md-4 col-xl-3 chat"><div class="card mb-sm-3 mb-md-0 contacts_card">
+  <h1 style="text-align: center;  margin-bottom: -0px; color: rgba(255, 255, 255, 0.5); ">{{username}} - {{room}}</h1>
+                <br><br><br>
+				<div class="col-md-4 col-xl-3 chat"><div class="card mb-sm-3 mb-md-0 contacts_card" style="margin-left: 50%; width: 60%; padding: 20px;">
 					<div class="card-header">
 						<form action="{% url 'new_chat' %}" method="get">
                             <div class="input-group">
                                 <input type="text" placeholder="Search..." name="search" class="form-control search" style="height: 35px;">
-                                <div class="input-group-prepend">
-                                    <button type="submit" style="margin-left: 0px; margin-top: 5px;">
+                                <div class="input-group-prepend" style="display: flex; flex-direction: row;">
+                                    <button type="submit" style="margin-left: 0px; margin-top: 0px;">
                                         <i class="fas fa-search"></i>
                                     </button>
                                 </div>
@@ -383,27 +430,29 @@ $(document).ready(function(){
       									{% if friend.currently_active %}
               <li class="active" style="padding-top: 12px;">
                   {% else %}
-                  <li>
+                  <li style="text-decoration: none; list-style: none;">
                   {% endif %}
 
-          <div class="d-flex bd-highlight">
+          <div class="d-flex bd-highlight" style="display: flex; flex-direction: row; margin-top: 20px;">
               <div class="img_cont">
                   {% if friend.profile_picture_url %}
 
                       <a href="{{ friend.user_profile_url }}">
-                          <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img">
+                          <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img" style="width: 50px; height: 50px; border-radius: 50px; text-decoration; none;">
                       <span class="online_icon"></span>
                       </a>
                   {% endif %}
               </div>
-              <div class="user_info">
-                  <span>{{ friend.username }}</span>
-                  {% if friend.online == True %}
-                      <p>Online</p>
-                  {% else %}
-                      <p>Offline</p>
-                  {% endif %}
-              </div>
+{% if friend.online == True %}
+    <p>
+        <span style="color: green; font-size: 24px; margin-left: -25%;">●</span>
+    </p>
+{% else %}
+    <p>
+        <span style="color: red; font-size: 24px; margin-left: -25%;">●</span>
+    </p>
+{% endif %}
+
           </div>
       </li>
 
@@ -414,25 +463,31 @@ $(document).ready(function(){
 									{% if friend.currently_active %}
               <li class="active" style="padding-top: 12px;">
                   {% else %}
-                  <li>
+                  <li style="text-decoration: none; list-style: none;">
                   {% endif %}
 
-          <div class="d-flex bd-highlight">
+          <div class="d-flex bd-highlight" style="display: flex; flex-direction: row; margin-top: 20px;">
               <div class="img_cont">
                   {% if friend.profile_picture_url %}
                       <a href="{{ friend.user_profile_url }}">
-                          <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img">
+                          <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img" style="width: 50px; height: 50px; border-radius: 50px; text-decoration; none;">
                       <span class="online_icon"></span>
                       </a>
                   {% endif %}
               </div>
               <div class="user_info">
-                  <span>{{ friend.username }}</span>
+                  <span style="margin-top: 0px; font-size: 18px;">{{ friend.username }}</span>
+                  <span style="font-size: 12px; margin-left: 10px; margin-top: 20px;" style="margin-top: 0px;">{{ friend.description }}</span>
                   {% if friend.online == True %}
-                      <p>Online</p>
+                    <p>
+                        <span style="color: green; font-size: 24px; margin-left: -25%;">●</span>
+                    </p>
                   {% else %}
-                      <p>Offline</p>
+                    <p>
+                        <span style="color: red; font-size: 24px; margin-left: -25%;">●</span>
+                    </p>
                   {% endif %}
+
               </div>
           </div>
       </li>
@@ -441,26 +496,45 @@ $(document).ready(function(){
                   {% if friend.currently_active %}
               <li class="active" style="padding-top: 12px;">
                   {% else %}
-                  <li>
+                  <li style="text-decoration: none; list-style: none;">
                   {% endif %}
-          <div class="d-flex bd-highlight">
-              <div class="img_cont">
-                  {% if friend.profile_picture_url %}
-                      <a href="{{ friend.user_profile_url }}">
-                          <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img">
-                      <span class="online_icon"></span>
-                      </a>
-                  {% endif %}
-              </div>
-              <div class="user_info">
-                  <span>{{ friend.username }}</span>
-                  {% if friend.online == True %}
-                      <p>Online</p>
-                  {% else %}
-                      <p>Offline</p>
-                  {% endif %}
-              </div>
-          </div>
+             <div class="friend-item">
+                <!-- User Info -->
+                <div class="img_cont">
+                    {% if friend.profile_picture_url %}
+                        <a href="{{ friend.user_profile_url }}">
+                            <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img" style="width: 50px; height: 50px; border-radius: 50px; margin-top: -15px;">
+                            <span class="online_icon"></span>
+                        </a>
+                    {% endif %}
+                </div>
+
+                <div class="user_info" style="padding-left: 20px; margin-top: 0px;">
+                    <span style="font-size: 18px; margin-top: 40px;">{{ friend.username }}</span><br>
+                    <span style="font-size: 12px;">{{ friend.description }}</span>
+                    {% if friend.online %}
+                        <p><span style="color: green; font-size: 24px; margin-left: -24%; margin-top: -30%; display: flex;">●</span></p>
+                    {% else %}
+                        <p><span style="color: red; font-size: 24px; margin-left: -24%; margin-top: -30%; display: flex;">●</span></p>
+                    {% endif %}
+                </div>
+
+                <!-- Action Menu -->
+                <div class="action_menu">
+                    <ul style="padding: 0; margin: 0;">
+                        <div class="video_cam">
+									<span><i class="fas fa-video" style="font-size: 20px;"></i></span>
+									<span><i class="fas fa-phone" style="font-size: 20px; margin-left: 10px;"></i></span>
+								</div>
+                        <li style="list-style: none; margin-bottom: 5px;"><i class="fas fa-user-circle"></i> View profile</li>
+                        <li style="list-style: none; margin-bottom: 5px;"><i class="fas fa-users"></i> Add to close friends</li>
+                        <li style="list-style: none; margin-bottom: 5px;"><i class="fas fa-plus"></i> Add to group</li>
+                        <li style="list-style: none;"><i class="fas fa-ban"></i> Block</li>
+                    </ul>
+                </div>
+            </div>
+
+
       </li>
   {% empty %}
       <h2>No friends found.</h2>
@@ -473,30 +547,25 @@ $(document).ready(function(){
 					</div>
 					<div class="card-footer"></div>
 				</div></div>
-				<div class="col-md-8 col-xl-6 chat">
-					<div class="card">
+				<div class="col-md-8 col-xl-6 chat" style="">
+					<div class="card" style="margin-left: 40px; padding: 20px;">
 						<div class="card-header msg_head">
-							<div class="d-flex bd-highlight">
+							<div class="d-flex bd-highlight" style="display: flex; flex-direction: row; margin-top: 20px;">
 								<div class="img_cont">
 
 						{% for friend in friends_data %}
                             {% if friend.currently_active %}
-    					        {% if friend.profile_picture_url %}
-                        <a href="{{ friend.user_profile_url }}">
-           				 	<img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img">
-									<span class="online_icon"></span>
-						</a>
-								</div>
-								<div class="user_info">
-									<span>{{ friend.username }}</span>
-									{% if friend.online == True %}
-									<p>Online</p>
-									{% else %}
-									<p>Offline</p>
-									{% endif %}
-									{% endif %}
-									{% endif %}
-									{% endfor %}
+                                <a href="{{ friend.user_profile_url }}">
+                                    <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img" style="width: 50px; height: 50px; border-radius: 50px; text-decoration; none;">
+                                    <span class="online_icon"></span>
+                                </a>
+                                <div class="user_info">
+                                    <span style="margin-top: 0px; font-size: 18px;">{{ friend.username }}</span>
+                                    <span style="font-size: 12px; margin-left: 10px; margin-top: 20px;">{{ friend.description }}</span>  <!-- Access description -->
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+
 								</div>
 
 								<div class="user_info">
@@ -506,17 +575,17 @@ $(document).ready(function(){
 									{% endfor %}
 								</div>
 								<div class="video_cam">
-									<span><i class="fas fa-video"></i></span>
-									<span><i class="fas fa-phone"></i></span>
+									<span><i class="fas fa-video" style="font-size: 30px;"></i></span>
+									<span><i class="fas fa-phone" style="font-size: 30px;"></i></span>
 								</div>
 							</div>
 							<span id="action_menu_btn"><i class="fas fa-ellipsis-v"></i></span>
 							<div class="action_menu">
 								<ul>
-									<li><i class="fas fa-user-circle"></i> View profile</li>
-									<li><i class="fas fa-users"></i> Add to close friends</li>
-									<li><i class="fas fa-plus"></i> Add to group</li>
-									<li><i class="fas fa-ban"></i> Block</li>
+									<li style="text-decoration: none; list-style: none;"><i class="fas fa-user-circle"></i> View profile</li>
+									<li style="text-decoration: none; list-style: none;"><i class="fas fa-users"></i> Add to close friends</li>
+									<li style="text-decoration: none; list-style: none;"><i class="fas fa-plus"></i> Add to group</li>
+									<li style="text-decoration: none; list-style: none;"><i class="fas fa-ban"></i> Block</li>
 								</ul>
 							</div>
 						</div>
@@ -529,15 +598,19 @@ $(document).ready(function(){
     </div>
 
 
-  <div class="backgroundimages" style="background: url(''); background-size: cover; min-height: 140vh;">
+{% for Room in Background %}
+{% if Room.page == 'room.html' %}
+  <div class="backgroundimages" style="background: url('{{Room.cover.url}}'); background-size: cover; min-height: 140vh;">
+      {% endif %}
+{% endfor %}
 
 
 
 <script>
     function copyToClipboard() {
-        const labelUrl = window.location.href;  // Get the current label URL
+        const roomUrl = window.location.href;  // Get the current room URL
         const input = document.createElement('textarea');
-        input.value = labelUrl;
+        input.value = roomUrl;
         document.body.appendChild(input);
         input.select();
         document.execCommand('copy');
@@ -569,15 +642,15 @@ $(document).ready(function(){
 </script>
 
 
-<div class="chat-container" id="chat-container" style="background-color: rgba(0, 0, 0, 0);">
+<div class="chat-container" id="chat-container" style="background-color: rgba(0, 0, 0, 0); overflow-y: scroll; height: 800px;">
 <br>
 
   <div id="display"></div>
   <div class="chat-input" style="margin-left: 5.5%; width: 94.5%;">
   <form id="post-form" enctype="multipart/form-data">
     {% csrf_token %}
-    <input type="hidden" name="username" id="username" value="{{user.username}}" />
-    <input type="hidden" name="label_id" id="label_id" value="{{label}}" />
+    <input type="hidden" name="username" id="username" value="{{username}}" />
+    <input type="hidden" name="room_id" id="room_id" value="{{room}}" />
       <div class="combined-input">
     <input type="text" name="message" id="message" placeholder="Type your message or choose a file..." />
     <input type="file" name="file" id="file" style="display: none;">  <!-- Add this line -->
@@ -603,7 +676,7 @@ $(document).ready(function() {
         console.log("Loading and displaying messages");
         $.ajax({
             type: 'GET',
-            url: '/getDirectMessages/',
+            url: '/getMessages/General/',
             success: function(response) {
                 console.log("Messages fetched successfully:", response);
                 $("#display-general").empty();
@@ -636,13 +709,13 @@ $(document).ready(function() {
 
         let messageContent = $('#message').val().trim();
         let username = $('#username').val();
-        let labelId = $('#room_name').val();
+        let roomId = $('#room_name').val();
         let pageName = $('#page_name').val();
         let csrfToken = $('input[name=csrfmiddlewaretoken]').val();
 
         console.log("Message Content:", messageContent);
         console.log("Username:", username);
-        console.log("label ID:", labelId);
+        console.log("Room ID:", roomId);
         console.log("Page Name:", pageName);
 
         if (!messageContent) {
@@ -655,7 +728,7 @@ $(document).ready(function() {
             url: '{% url "send" %}', // Use Django's URL template tag
             data: {
                 username: username,
-                label_id: labelId,
+                room_id: roomId,
                 message: messageContent,
                 csrfmiddlewaretoken: csrfToken,
                 page_name: pageName
@@ -730,3 +803,4 @@ function preloadImages(urls) {
 	</body>
 </html>
 
+{% endblock content %}

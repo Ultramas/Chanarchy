@@ -1,6 +1,7 @@
 {% extends 'feeds/base.html' %}
 
 {% load static custom_tags %}
+{% load static %}
 
 
 {% block content %}
@@ -11,9 +12,13 @@
 
 
 <style>
+    html{
+    width: 110%;
+    height: 110%;
+    }
     body {
   background: linear-gradient(45deg, #fc466b, #3f5efb);
-  height: 100vh;
+  height: 0vh;
   font-family: "Montserrat", sans-serif;
 }
 
@@ -192,7 +197,6 @@ button:focus {
 img {
     width: 50px;
     height: 50px;
-    border-radius: 50%;
 }
 
 </style>

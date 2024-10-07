@@ -11,11 +11,22 @@
 
 <style>
 
+    html{
+    width: 110%;
+    height: 110%;
+    }
 
     body {
   background: linear-gradient(45deg, #fc466b, #3f5efb);
   height: 100vh;
   font-family: "Montserrat", sans-serif;
+}
+
+.modal {
+    z-index: 1050; /* Higher than the backdrop */
+}
+.modal-backdrop {
+    z-index: 1040;
 }
 
 .container {
@@ -254,8 +265,6 @@ button:focus {
     </div>
   </div>
 </div>
-</body>
-
 <!-- Modal 2: Image and Video -->
 
 
@@ -277,7 +286,7 @@ button:focus {
   Upload Post
 </button>
 <!-- Modal 3: Title and Description for Second Set -->
-<div class="modal fade" id="titleDescriptionModal2" tabindex="-1" role="dialog" aria-labelledby="titleDescriptionModalLabel2" aria-hidden="true" style="z-index: 5;">
+<div class="modal fade" id="titleDescriptionModal2" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="titleDescriptionModalLabel2" aria-hidden="true" style="z-index: 5;">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -339,10 +348,24 @@ button:focus {
 </button>
 
 <script>
+// Handle the transition between the first and second modals
 document.getElementById('nextButton').addEventListener('click', function() {
-    $('#titleDescriptionModal').modal('hide');
-    $('#mediaModal').modal('show');
+  // Hide the first modal
+  $('#titleDescriptionModal').modal('hide');
+
+  // Show the second modal
+  $('#mediaModal').modal('show');
 });
+
+// For the second set of modals
+document.getElementById('nextButton2').addEventListener('click', function() {
+  // Hide the second title/description modal
+  $('#titleDescriptionModal2').modal('hide');
+
+  // Show the second media modal
+  $('#photoVideoModal').modal('show');
+});
+
 
 document.getElementById('mediaForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -380,4 +403,5 @@ document.getElementById('mediaForm').addEventListener('submit', function(e) {
 
   </div>
 </div>
+</body>
 {% endblock %}

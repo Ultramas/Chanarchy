@@ -150,7 +150,7 @@
         </div>
       </div>
 
-      <form action="{% url 'showcase:send_post_to_friend' post.id room.name %}" method="POST">
+      <form action="{% url 'send_post_to_friend' post.id room.name %}" method="POST">
     {% csrf_token %}
     <button type="submit">Send to Room</button>
 </form>

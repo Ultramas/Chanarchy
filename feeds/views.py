@@ -20,11 +20,12 @@ from guest_user.mixins import RegularUserRequiredMixin
 from imagekit.models import ProcessedImageField
 from annoying.decorators import ajax_request
 from notifications.models import Notification
+from django.shortcuts import redirect
 
 from .forms import UserCreateForm, PostPictureForm, ProfileEditForm, CommentForm, SettingsForm, BackgroundThemeForm, \
-    CreateCommunityForm
+    CreateCommunityForm, RoomSettings
 from .models import UserProfile, IGPost, Comment, Like, Message, Room, BackgroundTheme, SettingsModel, Community, \
-    Friend, DefaultAvatar, DirectMessages
+    Friend, DefaultAvatar, DirectMessages, DirectMessageText
 
 
 class BackgroundView(ListView):
@@ -183,9 +184,11 @@ class FriendView(ListView):
         if signed_in_user.is_authenticated:
             context['theme'] = BackgroundTheme.objects.filter(is_active=1, user=signed_in_user)
             context['user_profile'] = UserProfile.objects.filter(user=signed_in_user).first()
-            context['friends'] = Friend.objects.filter(user=signed_in_user)
-        return context
 
+            # Prefetch userprofile data related to each friend
+            friends_with_profiles = Friend.objects.filter(user=signed_in_user).select_related('friend__userprofile')
+            context['friends'] = friends_with_profiles
+        return context
 
 from django.db.models import Q
 
@@ -257,7 +260,7 @@ def notifications(request):
 @login_required
 def inbox(request):
     user = request.user
-    rooms = Room.objects.filter(Q(receiver=user) | Q(sender=user))
+    rooms = DirectMessages.objects.filter(Q(receiver=user) | Q(sender=user))
     context = {
         'rooms': rooms
     }
@@ -268,8 +271,8 @@ def inbox(request):
 def chat(request, label):
     user = request.user
     try:
-        room = Room.objects.get(label=label)
-    except Room.DoesNotExist:
+        room = DirectMessages.objects.get(label=label)
+    except DirectMessages.DoesNotExist:
         raise PermissionDenied("This chat room does not exist.")
 
     # Check if the user is either the sender or the receiver
@@ -330,13 +333,115 @@ def send(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
 
 
-@login_required
-def new_chat(request):
-    profiles = request.user.userprofile.following.all()
-    context = {
-        'profiles': profiles
-    }
-    return render(request, 'feeds/new_chat.html', context)
+class ChatView(ListView):
+    model = Room
+    template_name = "feeds/new_chat.html"  # Update the template name to match
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        signed_in_user = self.request.user
+        context['communityin'] = Community.objects.filter(is_active=True, members=signed_in_user)
+        if self.request.user.is_authenticated:
+            context['theme'] = BackgroundTheme.objects.filter(is_active=1, user=signed_in_user)
+            # Fetch user's friends
+            context['Friends'] = Friend.objects.filter(user=self.request.user)
+
+            current_user = self.request.user
+            newprofile = UserProfile.objects.filter(is_active=1, user=current_user)
+            context['Profiles'] = newprofile
+
+            # Process profiles to add URLs and avatars
+            for newprofile in context['Profiles']:
+                user = newprofile.user
+                profile = UserProfile.objects.filter(user=user).first()
+                if profile:
+                    newprofile.newprofile_profile_picture_url = profile.profile_pic.url
+                    newprofile.newprofile_profile_url = newprofile.get_profile_url()
+
+            # Fetch online profiles
+            onlineprofile = Friend.objects.filter(is_active=1, user=current_user)
+            context['OnlineProfiles'] = onlineprofile
+
+            for onlineprofile in context['OnlineProfiles']:
+                friend = onlineprofile.friend
+                activeprofile = UserProfile.objects.filter(user=friend).first()
+                if activeprofile:
+                    onlineprofile.author_profile_picture_url = profile.profile_pic.url
+                    onlineprofile.friend_profile_picture_url = activeprofile.profile_pic.url
+                    onlineprofile.author_profile_url = onlineprofile.get_profile_url()
+                    onlineprofile.friend_name = onlineprofile.friend.username
+                    print('activeprofile exists')
+
+            # Friends data with profiles
+            friends = Friend.objects.filter(user=self.request.user)
+            friends_data = []
+
+            for friend in friends:
+                profile = UserProfile.objects.filter(user=friend.friend).first()
+                if profile:
+                    friends_data.append({
+                        'username': friend.friend.username,
+                        'profile_picture_url': profile.profile_pic.url,
+                        'profile_url': reverse('profile', args=[str(profile.pk)]),
+                        'currently_active': friend.currently_active,
+                        'user_profile_url': friend.get_profile_url2()
+                    })
+
+            context['friends_data'] = friends_data
+
+            # Add the search functionality
+            search_term = self.request.GET.get('search', '')
+            if search_term:
+                context = self.search_friends(context)
+
+            # Add profiles (from the new_chat function)
+            profiles = self.request.user.userprofile.following.all()
+            context['profiles'] = profiles
+        else:
+            # Provide default empty lists for anonymous users
+            context['Friends'] = []
+            context['Profiles'] = []
+            context['OnlineProfiles'] = []
+            context['friends_data'] = []
+            context['search_results'] = []
+            context['profiles'] = []  # From new_chat logic
+
+        return context
+
+    def search_friends(self, context):
+        search_term = self.request.GET.get('search', '')
+        if search_term:
+            item_list = Friend.objects.filter(
+                Q(friend__username__icontains=search_term)
+            ).prefetch_related('friend')
+
+            search_results_data = []
+            current_user = self.request.user
+
+            for friend in item_list:
+                profile = UserProfile.objects.filter(user=friend.friend).first()
+                if profile:
+                    search_results_data.append({
+                        'username': friend.friend.username,
+                        'profile_picture_url': profile.profile_pic.url if profile else None,
+                        'profile_url': reverse('profile', args=[str(profile.pk)]),
+                        'currently_active': friend.currently_active,
+                    })
+                    print('the friend does have a profile')
+                else:
+                    search_results_data.append({
+                        'username': friend.friend.username,
+                        'profile_picture_url': None,
+                        'profile_url': reverse('profile', args=[str(friend.friend.pk)]),
+                        'currently_active': friend.currently_active,
+                    })
+                    print('no profile on the friend')
+
+            context['search_results'] = search_results_data
+        else:
+            context['search_results'] = []
+
+        return context
 
 
 @login_required
@@ -535,7 +640,7 @@ class BackgroundThemeListView(ListView):
         context = super().get_context_data(**kwargs)
         signed_in_user = self.request.user
         if signed_in_user.is_authenticated:
-            context['theme'] = BackgroundTheme.objects.filter(is_active=1, user=signed_in_user)
+            context['theme'] = BackgroundTheme.objects.filter(is_active=1, user=signed_in_user) #does currently_set need to be added?
             # Ensure you retrieve the correct UserProfile object for the signed-in user
             context['user_profile'] = UserProfile.objects.filter(user=signed_in_user).first()
         return context
@@ -750,11 +855,9 @@ def notifications_view(request):
     return render(request, 'notifications.html', {'notifications': notifications})
 
 
-
-
 class RoomView(TemplateView):
     model = Room
-    template_name = 'room.html'
+    template_name = 'feeds/room.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -764,19 +867,20 @@ class RoomView(TemplateView):
         context['rooms_with_logo_same_name'] = rooms_with_logo_same_name
         room = self.kwargs['room']
 
+        signed_in_user = self.request.user
         username = self.request.GET.get('username')
         room_details = Room.objects.get(name=room)
         profile_details = UserProfile.objects.filter(user__username=username).first()
-        context['Logo'] = LogoBase.objects.filter(page=self.template_name, is_active=1)
-        context['Header'] = NavBarHeader.objects.filter(is_active=1).order_by("row")
-        context['DropDown'] = NavBar.objects.filter(is_active=1).order_by('position')
-        context['Background'] = BackgroundImageBase.objects.filter(is_active=1, page=self.template_name).order_by(
-            "position")
-        context['Titles'] = Titled.objects.filter(is_active=1, page=self.template_name).order_by("position")
-        context['Favicon'] = FaviconBase.objects.filter(is_active=1)
+        context['Background'] = BackgroundTheme.objects.filter(is_active=1, user=signed_in_user)
         context['username'] = username
         context['room_details'] = room_details
         context['profile_details'] = profile_details
+
+        # Assuming community name or identifier is passed in the URL, adjust accordingly
+        community_name = self.kwargs.get('community_name')  # Assuming 'community_name' is passed in the URL
+        if community_name:
+            community = Community.objects.filter(name=community_name).first()
+            context['community'] = community  # Pass the Community object to the template
 
         # Retrieve the author's profile avatar
         messages = Message.objects.all().order_by('-date')
@@ -786,11 +890,11 @@ class RoomView(TemplateView):
         for messages in context['Messaging']:
             profile = UserProfile.objects.filter(user=messages.signed_in_user).first()
             if profile:
-                messages.user_profile_picture_url = profile.avatar.url
+                messages.user_profile_picture_url = profile.profile_pic.url
                 messages.user_profile_url = messages.get_profile_url()
 
         current_user = self.request.user
-        newprofile = UserProfile2.objects.filter(is_active=1, user=current_user)
+        newprofile = UserProfile.objects.filter(is_active=1, user=current_user)
 
         context['Profiles'] = newprofile
 
@@ -798,7 +902,7 @@ class RoomView(TemplateView):
             user = newprofile.user
             profile = UserProfile.objects.filter(user=user).first()
             if profile:
-                newprofile.newprofile_profile_picture_url = profile.avatar.url
+                newprofile.newprofile_profile_picture_url = profile.profile_pic.url
                 newprofile.newprofile_profile_url = newprofile.get_profile_url()
 
         onlineprofile = Friend.objects.filter(is_active=1, user=current_user).order_by('-last_messaged')
@@ -811,24 +915,19 @@ class RoomView(TemplateView):
             friend = onlineprofile.friend
             activeprofile = UserProfile.objects.filter(user=friend).first()
             if activeprofile:
-                onlineprofile.author_profile_picture_url = profile.avatar.url
+                onlineprofile.author_profile_picture_url = profile.profile_pic.url
                 onlineprofile.author_profile_url = onlineprofile.get_profile_url()
-                onlineprofile.friend_profile_picture_url = profile.avatar.url
+                onlineprofile.friend_profile_picture_url = profile.profile_pic.url
                 onlineprofile.friend_profile_picture_url = onlineprofile.get_profile_url()
                 onlineprofile.friend_name = onlineprofile.friend.username
                 print('activeprofile exists')
-
-        # Retrieve the author's profile avatar
-        blog_posts = Blog.objects.filter(status=1).order_by('-created_on')
-
-        context['BlogPosts'] = blog_posts
 
         for onlineprofile in context['CurrentProfiles']:
             friend = onlineprofile.friend
             activeprofile = UserProfile.objects.filter(user=friend).first()
             if activeprofile:
-                onlineprofile.author_profile_picture_url = profile.avatar.url
-                onlineprofile.friend_profile_picture_url = profile.avatar.url  # Add this line
+                onlineprofile.author_profile_picture_url = profile.profile_pic.url
+                onlineprofile.friend_profile_picture_url = profile.profile_pic.url  # Add this line
                 onlineprofile.author_profile_url = onlineprofile.get_profile_url()
                 onlineprofile.friend_name = onlineprofile.friend.username
                 print('currentfriendprofile exists')
@@ -847,16 +946,17 @@ class RoomView(TemplateView):
                 # Add the friend's data to the list
                 friends_data.append({
                     'username': friend.friend.username,
-                    'profile_picture_url': profile.avatar.url,
-                    'profile_url': reverse('showcase:profile', args=[str(profile.pk)]),
+                    'profile_picture_url': profile.profile_pic.url,
+                    'profile_url': reverse('profile', args=[str(profile.pk)]),
                     'currently_active': friend.currently_active,
-                    'user_profile_url': friend.get_profile_url2()
+                    'user_profile_url': friend.get_profile_url2(),
+                    'description': profile.description  # Add the description here
                 })
             if friend_pk and int(friend_pk) == friend.pk:  # Check if PK matches
                 print('setting currently active')
                 friend.currently_active = True
                 friend.save()  # Update the friend's currently_active field
-                return redirect('showcase:room', room=room)  # Redirect back to the room URL
+                return redirect('room', room=room)  # Redirect back to the room URL
 
         # Add the friends' data to the context
         context['friends_data'] = friends_data
@@ -885,9 +985,9 @@ class RoomView(TemplateView):
                 if profile:
                     search_results_data.append({
                         'username': friend.friend.username,
-                        'profile_picture_url': profile.avatar.url if profile else None,
+                        'profile_picture_url': profile.profile_pic.url if profile else None,
                         # Handle cases where profile might be missing
-                        'profile_url': reverse('showcase:profile', args=[str(profile.pk)]),
+                        'profile_url': reverse('profile', args=[str(profile.pk)]),
                     })
                     print('the friend does have a profile')
                 else:
@@ -895,7 +995,7 @@ class RoomView(TemplateView):
                     search_results_data.append({
                         'username': friend.friend.username,
                         'profile_picture_url': None,  # Set to None or a default image URL
-                        'profile_url': reverse('showcase:profile', args=[str(friend.friend.pk)]),
+                        'profile_url': reverse('profile', args=[str(friend.friend.pk)]),
                     })
                     print('no profile on the friend')
 
@@ -910,9 +1010,6 @@ def room(request, room):
     username = request.GET.get('username')
 
     profile_details = UserProfile.objects.filter(user__username=username).first()
-    Logo = LogoBase.objects.filter(page='room.html', is_active=1)
-    Header = NavBarHeader.objects.filter(is_active=1).order_by("row")
-    DropDown = NavBar.objects.filter(is_active=1).order_by('position')
 
     return render(request, 'room.html', {
         'username': username,
@@ -920,9 +1017,6 @@ def room(request, room):
         'signed_in_user': signed_in_user,
         'room_details': room_details,
         'profile_details': profile_details,
-        'Logo': Logo,
-        'Header': Header,
-        'Dropdown': DropDown,
     })
 
 
@@ -944,7 +1038,7 @@ def checkview(request):
         new_room.signed_in_user = signed_in_user if signed_in_user.is_authenticated else None
         new_room.save()
         # Redirect to create_room page after successful creation (assuming it exists)
-        return redirect('showcase:create_room')  # Assuming you have a URL pattern named 'create_room'
+        return redirect('create_community')  # Assuming you have a URL pattern named 'create_room'
 
 
 @csrf_exempt
@@ -1007,6 +1101,8 @@ def send(request):
     return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
 
 
+
+
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.http import JsonResponse
 from django.views import View
@@ -1020,7 +1116,7 @@ from django.http import JsonResponse
 
 
 class NewRoomSettingsView(LoginRequiredMixin, TemplateView):
-    template_name = "create_room.html"
+    template_name = "feeds/create_community.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1044,7 +1140,7 @@ class NewRoomSettingsView(LoginRequiredMixin, TemplateView):
 
         if form.is_valid():
             form.save()
-            return redirect(f'{reverse("showcase:room", kwargs={"room": room_name})}?username={username}')
+            return redirect(f'{reverse("room", kwargs={"room": room_name})}?username={username}')
 
         return render(request, self.template_name, {'form': form})
 
@@ -1063,7 +1159,8 @@ def send_post_to_friend(request, post_id, room_name):
     else:
         messages.error(request, 'You are not allowed to send a post to this room.')
 
-    return redirect('showcase:room', room=room.name)
+    return redirect('room', room_name=room.name)
+
 
 
 def getMessages(request, room):
@@ -1071,14 +1168,17 @@ def getMessages(request, room):
         room_details = Room.objects.get(name=room)
     except Room.DoesNotExist:
         return JsonResponse({'messages': []})
-    shared_posts = room.shared_posts.all()
+
+    # Convert shared_posts QuerySet into a list of dictionaries
+    shared_posts = room_details.shared_posts.all().values('id', 'image', 'like', 'photo', 'reel','title',
+                                                          'user_profile','user_profile_id', 'video', 'posted_on')
     messages = Message.objects.filter(room=room_details)
     messages_data = []
     for message in messages:
         profile_details = UserProfile.objects.filter(user=message.signed_in_user).first()
         if profile_details:
             user_profile_url = message.get_profile_url()
-            avatar_url = profile_details.avatar.url
+            avatar_url = profile_details.profile_pic.url
         else:
             user_profile_url = f'/new_chat/{room}/?username={request.user.username}'
             avatar_url = DefaultAvatar.objects.first()
@@ -1091,8 +1191,159 @@ def getMessages(request, room):
             'date': message.date.strftime("%Y-%m-%d %H:%M:%S"),
             'message_number': message.message_number,
             'file': message.file.url if message.file else None,
-            'shared_posts': shared_posts,
+            'shared_posts': list(shared_posts),  # Convert shared_posts QuerySet to a list
         }
         messages_data.append(message_data)
 
     return JsonResponse({'messages': messages_data})
+
+
+def getDirectMessages(request, room):
+    # Fetch the room by label
+    room_details = get_object_or_404(DirectMessages, label=room)
+
+    # Fetch all messages for the room
+    messages = DirectMessageText.objects.filter(room=room_details)
+
+    # Construct the response data
+    messages_data = []
+    for message in messages:
+        profile_details = UserProfile.objects.filter(user=message.sender).first()
+
+        # Build user profile URL and avatar
+        if profile_details:
+            user_profile_url = message.get_profile_url()  # Assuming get_profile_url is a custom method
+            avatar_url = profile_details.profile_pic.url if profile_details.profile_pic else None
+        else:
+            # Fallback for new chat or missing user profile
+            user_profile_url = f'/new_chat/{room}/?username={message.sender.username}'
+            avatar_url = DefaultAvatar.objects.first().url if DefaultAvatar.objects.exists() else None
+
+        # Prepare message data
+        message_data = {
+            'user_profile_url': user_profile_url,
+            'avatar_url': avatar_url,
+            'user': message.sender.username,
+            'value': message.text,
+            'date': message.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+            'message_number': message.id,
+            'file': message.file.url if message.file else None,  # Handle files if present
+        }
+        messages_data.append(message_data)
+
+    return JsonResponse({'messages': messages_data})
+
+
+def chat_view(request, room):
+    try:
+        room_details = DirectMessages.objects.get(label=room)
+    except DirectMessages.DoesNotExist:
+        room_details = None
+
+    return render(request, 'chat.html', {'label': room})
+
+
+# event_list/todo_app/views.py
+from django.urls import reverse, reverse_lazy
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    ListView,
+    UpdateView,
+)
+
+from .models import EventItem, EventList
+
+
+class ListListView(ListView):
+    model = EventList
+    template_name = "todo_app/index.html"
+
+
+class ItemListView(ListView):
+    model = EventItem
+    template_name = "todo_app/event_list.html"
+
+    def get_queryset(self):
+        return EventItem.objects.filter(event_list_id=self.kwargs["list_id"])
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["event_list"] = EventList.objects.get(id=self.kwargs["list_id"])
+        return context
+
+
+class ListCreate(CreateView):
+    model = EventList
+    fields = ["title"]
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["title"] = "Add a new list"
+        return context
+
+
+class ItemCreate(CreateView):
+    model = EventItem
+    fields = [
+        "event_list",
+        "title",
+        "description",
+        "due_date",
+    ]
+
+    def get_initial(self):
+        initial_data = super().get_initial()
+        event_list = EventList.objects.get(id=self.kwargs["list_id"])
+        initial_data["event_list"] = event_list
+        return initial_data
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        event_list = EventList.objects.get(id=self.kwargs["list_id"])
+        context["event_list"] = event_list
+        context["title"] = "Create a new item"
+        return context
+
+    def get_success_url(self):
+        return reverse("list", args=[self.object.event_list_id])
+
+
+class ItemUpdate(UpdateView):
+    model = EventItem
+    fields = [
+        "event_list",
+        "title",
+        "description",
+        "due_date",
+    ]
+
+    def get_context_data(self):
+        context = super().get_context_data()
+        context["event_list"] = self.object.event_list
+        context["title"] = "Edit item"
+        return context
+
+    def get_success_url(self):
+        return reverse("list", args=[self.object.event_list_id])
+
+
+class ListDelete(DeleteView):
+    model = EventList
+    # You have to use reverse_lazy() instead of reverse(),
+    # as the urls are not loaded when the file is imported.
+    success_url = reverse_lazy("index")
+
+
+class ItemDelete(DeleteView):
+    model = EventItem
+
+    def get_success_url(self):
+        return reverse_lazy("list", args=[self.kwargs["list_id"]])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["event_list"] = self.object.event_list
+        return context
+
+

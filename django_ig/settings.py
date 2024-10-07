@@ -167,6 +167,9 @@ USE_L10N = True
 
 USE_TZ = True
 
+
+LOGOUT_REDIRECT_URL = '/'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Static files (CSS, JavaScript, Images)

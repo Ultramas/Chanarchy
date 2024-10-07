@@ -59,6 +59,11 @@ class UserProfile(models.Model):
                                       blank=True, verbose_name="Profile Picture")
 
     description = models.CharField(max_length=200, null=True, blank=True)
+    is_active = models.IntegerField(default=1,
+                                    blank=True,
+                                    null=True,
+                                    help_text='1->Active, 0->Inactive',
+                                    choices=((1, 'Active'), (0, 'Inactive')), verbose_name="Set active?")
 
     class Meta:
         verbose_name = "User Profile"
@@ -81,6 +86,11 @@ class UserProfile(models.Model):
         if self.pk is None and not self.profile_pic:
             self.profile_pic = 'profile_placeholder.jpg'
         super(UserProfile, self).save(*args, **kwargs)
+
+    def get_profile_url(self):
+        profile = UserProfile.objects.filter(user=self.user).first()
+        if profile:
+            return reverse('profile', args=[str(profile.pk)])
 
     def __str__(self):
         return self.user.username
@@ -211,17 +221,43 @@ class DirectMessages(models.Model):
     label = models.SlugField(unique=True)
     receiver = models.ForeignKey(User, related_name="receiver", on_delete=models.CASCADE)
     sender = models.ForeignKey(User, related_name="sender", on_delete=models.CASCADE)
+    message_number = models.PositiveIntegerField(default=0, editable=False)
+    file = models.FileField(upload_to='images/', null=True, blank=True)
+    image_length = models.PositiveIntegerField(blank=True, null=True, default=100,
+                                               help_text='Original length of the advertisement (use for original ratio).',
+                                               verbose_name="image length")
+    image_width = models.PositiveIntegerField(blank=True, null=True, default=100,
+                                              help_text='Original width of the advertisement (use for original ratio).',
+                                              verbose_name="image width")
+    is_active = models.IntegerField(default=1, blank=True, null=True, help_text='1->Active, 0->Inactive',
+                                    choices=((1, 'Active'), (0, 'Inactive')), verbose_name="Set active?")
 
     def get_last_message(self):
-        message = Message.objects.filter(room=self).last()
+        message = DirectMessageText.objects.filter(room=self).last()
         return message.text if message else ""
 
     def get_last_message_timestamp(self):
-        message = Message.objects.filter(room=self).last()
+        message = DirectMessageText.objects.filter(room=self).last()
         return message.timestamp if message else ""
 
     def __str__(self):
         return self.label
+
+
+class DirectMessageText(models.Model):
+    room = models.ForeignKey(DirectMessages, related_name="messages", on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    text = models.TextField()
+    timestamp = models.DateTimeField(default=datetime.now, db_index=True)
+
+    def __str__(self):
+        return self.text + " S:" + self.sender.username
+
+    def get_profile_url(self):
+        profile = UserProfile.objects.filter(user=self.signed_in_user).first()
+        if profile:
+            return reverse('profile', args=[str(profile.pk)])
+
 
 class Message(models.Model):
     value = models.CharField(max_length=1000000)
@@ -281,11 +317,11 @@ class Message(models.Model):
     def get_profile_url(self):
         profile = UserProfile.objects.filter(user=self.signed_in_user).first()
         if profile:
-            return reverse('showcase:profile', args=[str(profile.pk)])
+            return reverse('profile', args=[str(profile.pk)])
 
     def get_absolute_url(self):
         # Construct the URL for the room detail page
-        room_url = reverse("showcase:room", kwargs={'room': str(self.room)})
+        room_url = reverse("room", kwargs={'room': str(self.room)})
         # Construct the query parameters
         final_url = f"{room_url}?username={self.signed_in_user.username}"
         return final_url
@@ -333,7 +369,7 @@ class FriendRequest(models.Model):
         if current_user == self.sender or current_user == self.receiver:
             profile = UserProfile.objects.filter(user=current_user).first()
             if profile:
-                return reverse('showcase:profile', args=[str(profile.pk)])
+                return reverse('profile', args=[str(profile.pk)])
 
     # Handle the case where the current user is neither the sender nor the receiver
 
@@ -379,16 +415,17 @@ class Friend(models.Model):
         super().save(*args, **kwargs)  # Save the model again with the updated field (optional)
 
     def get_profile_url(self):
-        profile = UserProfile.objects.filter(user=self.friend).first()
+        profile = UserProfile.objects.filter(user=self.user).first()
         if profile:
-            return reverse('showcase:profile', args=[str(profile.pk)])
+            return reverse('profile', args=[str(profile.pk)])
 
     def get_profile_url2(self):
-        # Construct the URL for the room detail page
-        if self.friend_username == None:
-            return reverse("showcase:room", kwargs={'room': ''})
+        # If friend_username is None, return the base 'new_chat' URL
+        if self.friend_username is None:
+            return reverse("new_chat")
 
-        room_url = reverse("showcase:room", kwargs={'room': self.friend_username})
+        # If friend_username exists, use it with BackgroundTheme or the new_chat_create view
+        room_url = reverse("new_chat_create", kwargs={'username': self.friend_username})
 
         # Construct the query parameters with the username
         final_url = f"{room_url}?username={self.user.username}"
@@ -464,9 +501,9 @@ class Room(models.Model):
     def get_absolute_url(self):
         # Construct the URL for the room detail page
         if self.name == '':
-            return reverse("showcase:room", kwargs={'room': ''})
+            return reverse("room", kwargs={'room': ''})
 
-        room_url = reverse("showcase:room", kwargs={'room': self.name})
+        room_url = reverse("room", kwargs={'room': self.name})
 
         # Construct the query parameters with the username
         final_url = f"{room_url}?username={self.name}"
@@ -504,6 +541,7 @@ class Community(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Community Leader", blank=True)
     name = models.CharField(max_length=200)
     cover_image = models.ImageField()
+    banner = models.ImageField(blank=True, null=True)
     description = models.CharField(max_length=800)
     label = models.SlugField(blank=True, null=True, unique=True)
     invite = models.CharField(blank=True, null=True, max_length=300)
@@ -764,3 +802,43 @@ class DefaultAvatar(models.Model):
     class Meta:
         verbose_name = "Default Avatar"
         verbose_name_plural = "Default Avatars"
+
+
+
+# todo_list/todo_app/models.py
+from django.db import models
+from django.urls import reverse
+from django.utils import timezone
+
+
+def one_week_hence():
+    return timezone.now() + timezone.timedelta(days=7)
+
+
+class EventList(models.Model):
+    title = models.CharField(max_length=100, unique=True)
+
+    def get_absolute_url(self):
+        return reverse("list", args=[self.id])
+
+    def __str__(self):
+        return self.title
+
+
+class EventItem(models.Model):
+    title = models.CharField(max_length=100)
+    description = models.TextField(null=True, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    due_date = models.DateTimeField(default=one_week_hence)
+    todo_list = models.ForeignKey(EventList, on_delete=models.CASCADE)
+
+    def get_absolute_url(self):
+        return reverse(
+            "item-update", args=[str(self.todo_list.id), str(self.id)]
+        )
+
+    def __str__(self):
+        return f"{self.title}: due {self.due_date}"
+
+    class Meta:
+        ordering = ["due_date"]

@@ -3,27 +3,374 @@
 {% load static custom_tags %}
 
 {% block content %}
-<div class="follow__wrapper row">
-  <div class="follow__heading" style="text-align: center;">
-    <a class="back-button"><i class="fa fa-arrow-left active"></i></a>Select a profile
-  </div>
-  {% for profile in profiles %}
-    <div class="follow__card" id="{{ profile.pk }}">
-      {% if profile.profile_pic %}
-        <img class="picture-circle--small" src="{{ profile.profile_pic.url }}">
-      {% else %}
-        <img class="picture-circle--small" src="{% static 'images/profile_placeholder.jpg' %}">
-      {% endif %}
-      <a href="{% url 'profile' profile.user.username %}">{{ profile.user.username }}</a>
 
-      {% if request.user.is_authenticated and profile != request.user.userprofile %}
-        <div class="follow-toggle__container">
-          <a href="{% url 'new_chat_create' profile.user.username %}">
-            <button class="btn btn-primary generic-button">Message</button>
-          </a>
-        </div>
-      {% endif %}
-    </div>
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Chat</title>
+		<!-- Bootstrap --><!-- Font awesome -->
+		<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" >
+
+		<style>
+.interface{
+  text-align: center;
+  justify-content: center;
+  flex-direction: row;
+  padding-top: 8%;
+}
+
+  input[type=text], select {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  }
+
+  input[type=submit] {
+  width: 100%;
+  background-color: #4CAF50;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 15px;
+  cursor: pointer;
+  }
+
+  input[type=submit]:hover {
+  background-color: #45a049;
+  opacity: 0.5;
+  }
+
+
+
+  .containereze {
+    border: 2px solid #dedede;
+    /*background-color: #f1f1f1;*/
+    background-color: none;
+    background: none;
+    border-radius: 25px;
+    padding: 10px;
+    opacity: 0.7;
+    margin: 10px 0;
+    justify-content: center;
+    align-items: center;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: auto;
+  }
+
+  .darker {
+    border-color: #ccc;
+    background-color: #ddd;
+  }
+
+  .containereze::after {
+    content: "";
+    clear: both;
+    display: table;
+  }
+
+  .containereze img {
+    float: left;
+    max-width: 60px;
+    width: 100%;
+    margin-right: 20px;
+    border-radius: 50%;
+  }
+
+  .containereze img.right {
+    float: right;
+    margin-left: 20px;
+    margin-right:0;
+  }
+
+  .time-right {
+    float: right;
+    color: #aaa;
+  }
+
+  .time-left {
+    float: left;
+    color: #999;
+  }
+button[type="submit"] {
+    background-color: rgba(0, 0, 0, 0.4);
+    color: white;
+    height: 35px;
+    margin-right: 0px;
+    margin-top: 8px;
+    border: none;
+
+    padding: 0 10px;  /* Adjust padding as needed */
+    border-radius: 0px 8px 8px 0px; /* Top-left, Top-right, Bottom-right, Bottom-left */
+    cursor: pointer;
+}
+          li {
+  list-style-type: none;
+}
+
+.video_cam{
+  margin-left: 3%;
+  margin-top: 1%;
+  gap: 20px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+}
+
+.video_cam i {
+  font-size: 30px;
+}
+
+            .logo-background {
+    position: relative;
+}
+
+.popout {
+    display: none; /* Hide by default */
+    position: absolute;
+    top: 50%; /* Center vertically relative to logo-background */
+    left: -150px; /* Position to the left of the logo-background */
+    transform: translateY(-50%); /* Center the popout vertically */
+    background-color: black; /* Black background */
+    color: white; /* White text for contrast */
+    padding: 10px;
+    border-radius: 5px;
+    min-width: 120px; /* Minimum width for the popout */
+    text-align: center;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+}
+
+.logo-background:hover .popout {
+    display: block; /* Show on hover */
+}
+
+
+      </style>
+
+	</head>
+
+{% if user.is_authenticated %}
+    rew
+        {% for BackgroundTheme in theme %}
+    werq
+{% if BackgroundTheme.file %}
+<body style="background: url('{{BackgroundTheme.file.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover; background-repeat: no-repeat; background-attachment: fixed; height: 85vh;">
+        {% else %}
+<body style="background: url('{{BackgroundTheme.cover.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover; background-repeat: no-repeat; background-attachment: fixed; height: 85vh;">
+        {% endif %}
+        {% endfor %}
+
+		<div class="containereze-fluid h-100" style="background: none;">
+			<div class="row justify-content-center h-100" style="background: none;">
+
+					</div>
+					<div class="card-body contacts_body" style="background: none;">
+            <ul class="contacts">
+
+  {% if search_results %}
+     {% for friend in search_results %}
+
+     									{% if friend.currently_active %}
+                <a href="{{friend.user_profile_url}}">
+              <li class="active" style="padding-top: 12px;">
+                  {% else %}
+                  <li>
+                  {% endif %}
+          <div class="d-flex bd-highlight" style="background: none;">
+              <a href="{{friend.get_profile_url}}">
+              <div class="img_cont">
+                  {% if friend.profile_picture_url %}
+
+                      <a href="{{friend.user_profile_url}}">
+                          <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img" style="border-radius: 50px; width: 50px; height: 50px;">
+                      <span class="online_icon"></span>
+                      </a>
+                  {% endif %}
+              </div>
+
+              <div class="user_info" style="margin-right: 25px; font-size: 20px;">
+                  <span>{{ friend.username }}</span>
+                  {% if friend.online == True %}
+                      <p>Online</p>
+                  {% else %}
+                      <p>Offline</p>
+                  {% endif %}
+              </div>
+              </a>
+          </div>
+      </li>
+</a>
+    {% endfor %}
+{% else %}
+  {% for friend in item_list %}
+
+                <a href="{{friend.user_profile_url}}">
+      <li class="active">
+          <div class="d-flex bd-highlight">
+              <a href="{{friend.get_profile_url}}">
+              <div class="img_cont">
+                  {% if friend.profile_picture_url %}
+                      <a href="{{friend.user_profile_url}}">
+                          <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img" style="border-radius: 50px; width: 50px; height: 50px;">
+                      <span class="online_icon"></span>
+                      </a>
+                  {% endif %}
+              </div>
+              <div class="user_info" style="margin-right: 25px;">
+                  <span>{{ friend.username }}</span>
+                  {% if friend.online == True %}
+                      <p>Online</p>
+                  {% else %}
+                      <p>Offline</p>
+                  {% endif %}
+              </div>
+              </a>
+          </div>
+      </li>
+                </a>
+              {% empty %}
+                  {% for friend in friends_data %}
+                <a href="{{friend.user_profile_url}}">
+									{% if friend.currently_active %}
+              <li class="active" style="padding-top: 12px;">
+                  {% else %}
+                  <li>
+                  {% endif %}
+          <div class="d-flex bd-highlight">
+              <a href="{{friend.get_profile_url}}">
+              <div class="img_cont">
+                  {% if friend.profile_picture_url %}
+                      <a href="{{friend.user_profile_url}}">
+                          <img src="{{ friend.profile_picture_url }}" class="rounded-circle user_img" style="border-radius: 50px; width: 50px; height: 50px;">
+                      <span class="online_icon"></span>
+                      </a>
+                  {% endif %}
+              </div>
+              <div class="user_info" style="margin-right: 25px;">
+                  <span>{{ friend.username }}</span>
+                  {% if friend.online == True %}
+                      <p>Online</p>
+                  {% else %}
+                      <p>Offline</p>
+                  {% endif %}
+              </div>
+              </a>
+          </div>
+                </li></a>
+  {% empty %}
+      <h2>No friends found.</h2>
   {% endfor %}
-</div>
-{% endblock %}
+  {% endfor %}
+{% endif %}
+            </ul>
+          </div>
+
+				</div></div>
+				<div class="col-md-8 col-xl-6 chat" style=" margin-left: 25%; background: rgba(0, 0, 0, 0.4); padding: 10px; border-radius; 200px;">
+					<div class="card" style="padding: 25px; background: linear-gradient(rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.2)); border: none;">
+						<div class="card-header msg_head">
+							<div class="d-flex bd-highlight" style="display: flex; flex-direction: row;">
+
+							<div class="profilepicturese" style="display: flex; flex-direction: row;">
+
+							{% for newprofile in Profiles %}
+                                <a href="{{newprofile.get_profile_url}}">
+								<div class="img_cont">
+									{% if newprofile.newprofile_profile_picture_url %}
+									<img src="{{ newprofile.newprofile_profile_picture_url }}" class="rounded-circle user_img" style="border-radius: 50px; width: 50px; height: 50px;">
+									{% else %}
+									<!-- Placeholder image or default avatar -->
+									<img src="{% static 'css/images/a.jpg' %}" alt="Default Avatar" width="50" height="50" style="border-radius: 50px;" class="rounded-circle user_img">
+									{% endif %}
+									<span class="online_icon"></span>
+								</div>
+                                </a>
+							{% endfor %}
+
+								<div class="user_info" style="margin-right: 25px; margin-top: 8px;">
+
+							{% for newprofile in Profiles %}
+                                <a href="{{newprofile.get_profile_url}}">
+									<span style="margin-left: 10px; font-size: 25px; color: white;">{{user.username}}</span>
+                                </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                                <br>
+								<div class="video_cam" style="margin-left; 20px; color: black;">
+									<span><i class="fas fa-video"></i></span>
+									<span><i class="fas fa-phone"></i></span>
+								</div>
+							</div>
+                            </div>
+                        <br>
+							<span id="action_menu_btn" style="color: white;"><i class="fas fa-ellipsis-v"></i></span>
+							<div class="action_menu" style="color: white;">
+								<ul>
+									<li><i class="fas fa-user-circle"></i> View profile</li>
+									<li><i class="fas fa-users"></i> Add to close friends</li>
+									<li><i class="fas fa-plus"></i> Add to group</li>
+									<li><i class="fas fa-ban"></i> Block</li>
+								</ul>
+							</div>
+						</div>
+						<div class="card-body msg_card_body">
+							<div class="d-flex justify-content-start mb-4">
+								    <div class = "room">
+      <form id="post-form" method="POST" action="checkview">
+          {% csrf_token %}
+		  <label style="text-align: center;"><b style="color: white;">Room Name</b></label>
+          <input style="text-align: center;" type="text" name="room_name" id="room_name" width="100px" />
+          <label style="margin-top: 20px;"><b style="color: white;">Username</b></label>
+          <input type="text" name="username" id="username" width="100px" />
+          <input type="submit" value="Enter Room">
+      </form>
+    </div>
+  </div>
+  </div>
+  </div>
+        <div class="communities" style="position: absolute; right: 0; width: 100px; height: 80vh; top: 6%;">
+            <div class="logo-background" style="width: 100px; height: 100px; background: rgba(0, 0, 255, 0.4); position: relative;">
+                <img src="{% static 'images/logo.png' %}" class="logo" style="width: 80px; height: 80px; margin-top: 10px; margin-left: 8px;">
+
+
+
+        <div class="community-background" style="width: 100px; height: 90vh; background:  rgba(0, 0, 255, 0.4); overflow-y: scroll; padding-bottom: 50px;">
+            <!--communities & logos of the communities-->
+            {% for Community in communityin %}
+
+                <img src="{{Community.cover_image.url}}" class="logo" style="width: 70px; height: 70px; margin-left: 15px; display: flex; flex-direction: column; border-radius: 100px; justify-content: center; margin-left: auto; margin-right: auto; margin-top: 50px;">
+                 <div class="popout">
+                    {{ Community.name }}
+                </div>
+            {% endfor %}
+        </div>
+        </div>
+	<!-- JQuery -->
+     <script type="text/javascript" src="{% static 'css/js/chat.js' %}"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	</body>
+</html>
+
+        {% else %}
+<h1 style="justify-content: center; text-align: center; margin-top: 10%;">
+   Please
+<a href="{% url 'login' %}">
+    Login
+    </a>
+    or
+<a href="{% url 'signup' %}">
+    Sign Up
+</a>
+    to join or create a Room!
+</h1>
+
+            {% endif %}
+{% endblock content %}

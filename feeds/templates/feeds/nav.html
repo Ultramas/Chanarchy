@@ -4,6 +4,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.0/gsap.min.js"></script>
 
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
@@ -218,19 +219,11 @@ hr {
     font-size: 30px;
     cursor: pointer;
     position: fixed;
-    top: 10px;
-    left: 10px;
+    top: 3px;
+    left: 3px;
     z-index: 1000;
-    z-index: 5000;
-}
-
-.hamburger {
-    font-size: 30px;
-    cursor: pointer;
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    z-index: 1000;
+    background: none;
+    border: none;
 }
 
 .sidebar-container {
@@ -239,16 +232,21 @@ hr {
     left: 0;
     height: 100%;
     width: 250px;
-    transform: translateX(0);
-    transition: transform 0.3s ease;
+    transform: translateX(0); /* Sidebar is visible by default */
     background-color: #333;
     color: white;
     overflow-y: auto;
+    opacity: 1; /* Ensure it's visible */
+    visibility: visible; /* Ensure it is visible initially */
+    transition: opacity 0.5s ease-in-out, visibility 0s 0.5s; /* For smooth fade-in and fade-out */
 }
 
-.sidebar-container.hidden {
-    transform: translateX(-100%);
+.hidden {
+    opacity: 0; /* Fades out instead of disappearing instantly */
+    visibility: hidden; /* Hides the sidebar after the fade */
+    transition: opacity 0.5s ease-in-out, visibility 0s 0.5s; /* Synchronize visibility and opacity */
 }
+
 
 .username {
   max-width: 120px;
@@ -261,26 +259,51 @@ hr {
 
 
 </style>
-</head>
-<body>
-<script>
+
+    <script>
+// JavaScript
+
+// Set the initial position of the sidebar visible by default
+gsap.set(".sidebar-container", { x: 0 });
+
 function toggleSidebar() {
     const sidebarContainer = document.querySelector('.sidebar-container');
-    sidebarContainer.classList.toggle('hidden');
+    if (sidebarContainer) {
+        const isHidden = sidebarContainer.classList.contains('hidden');
+        gsap.to(sidebarContainer, {
+            x: isHidden ? 0 : -250, // Slide in/out based on hidden state
+            duration: 0.5, // Duration in seconds
+            ease: "power2.out" // Easing function for a more natural glide
+        });
+        sidebarContainer.classList.toggle('hidden');
+    } else {
+        console.error('Sidebar container not found');
+    }
 }
-window.onload = function() {
-  const usernameElement = document.getElementById('username');
-  let fontSize = 16; // Starting font size in pixels
-  const maxWidth = 150; // Maximum width in pixels
 
-  while (usernameElement.scrollWidth > maxWidth && fontSize > 0) {
-    fontSize -= 0.5; // Decrease font size incrementally
-    usernameElement.style.fontSize = fontSize + 'px';
-  }
-};
+// Ensure the fade-out effect on page unload
+window.addEventListener("beforeunload", function (event) {
+    gsap.to("body", {
+        opacity: 0,
+        duration: 0.5,
+        ease: "power2.out"
+    });
+});
 
-</script>
+// Ensure fade-in on page load
+window.addEventListener("load", function () {
+    gsap.to("body", {
+        opacity: 1,
+        duration: 0.5,
+        ease: "power2.out"
+    });
+});
 
+
+    </script>
+
+</head>
+<body>
 <div class="navbar navbar-default navbar-fixed-top" id="main-nav" style="background-color: rgba(255, 255, 255, 0.9);">
       <div class="container desktop">
         <div class="navbar-header">
@@ -304,6 +327,7 @@ window.onload = function() {
                     <li><a href="{% url 'notifications' %}"><i class="fa fa-heart-o {% active 'notifications' %}" aria-hidden="true"></i></a></li>
                     <li><a href="{% url 'profile' request.user.username %}"><i class="fa fa-user {% active 'profile' %}" aria-hidden="true"></i></a></li>
                     <li><a href="{% url 'inbox' %}"><i class="fa fa-inbox {% active 'inbox' %}" aria-hidden="true"></i></a></li>
+                    <li><a href="{% url 'logout' %}">Logout</a></li>
                     <!--
                       Using profileclass page logout for now
                       <li><a href="{% url 'signout' %}">Signout</a></li>
@@ -312,7 +336,6 @@ window.onload = function() {
                     <li><a href="{% url 'login' %}">Login</a></li>
                     <li><a href="{% url 'signup' %}">Signup</a></li>
                 {% endif %}
-            </ul>
         </div>
       </div>
       <div class="container mobile">
@@ -344,7 +367,7 @@ window.onload = function() {
           </a>
         {% else %}
           <div class="navbar-header">
-              <a href="/" class="navbar-brand">Django IG</a>
+              <a href="/" class="navbar-brand">Chanarchy</a>
               <a href="{% url 'login' %}" class="navbar-brand">Login</a>
               <a href="{% url 'signup' %}" class="navbar-brand">Signup</a>
           </div>
@@ -358,7 +381,7 @@ window.onload = function() {
 <div class="navbar navbar-default navbar-fixed-top visible-xs" id="mobile-top-nav">
   {% if request.resolver_match.url_name == 'index' %}
     <div class="navbar-header">
-        <a href="/" class="navbar-brand">Django IG</a>
+        <a href="/" class="navbar-brand">Chanarchy</a>
         <a href="{% url 'inbox' %}"><i class="fa fa-inbox active item-right" aria-hidden="true"></i></a>
     </div>
   {% elif request.resolver_match.url_name == 'post' or request.resolver_match.url_name == 'post_picture' or request.resolver_match.url_name == 'chat' %}
@@ -373,12 +396,14 @@ window.onload = function() {
   {% endif %}
 </div>
 
-  <nav class="sidebar">
 
-    <div>
-          <a href="{% url 'index' %}">
-       <img src="{% static 'images/logo.png' %}" style="margin-top: -95%; width: 200px; height: 160px;">
-          </a>
+<button class="hamburger" onclick="toggleSidebar()" style="z-index: 9999;">☰</button>
+<div class="sidebar-container">
+    <nav class="sidebar">
+        <div>
+            <a href="{% url 'index' %}">
+                <img src="../static/images/logo.png" style="margin-top: -95%; width: 200px; height: 160px;">
+            </a>
       <hr/>
         <br>
         <br>
@@ -423,37 +448,15 @@ window.onload = function() {
           </a>
         </li>
         <li>
-         <a href="{% url 'discover' %}">
+         <a href="{% url 'index' %}">
             <span class="material-symbols-outlined">
-            travel_explore
+             Overview
             </span>
-            <span class="material-symbols-outlined" style="font-size: 16px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
-            Find Communities
+            <span class="material-symbols-outlined" style="font-size: 18px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
+            Events
             </span>
           </a>
         </li>
-        <li>
-        <li>
-         <a href="{% url 'mycommunities' %}">
-            <span class="material-symbols-outlined">
-             communities
-            </span>
-            <span class="material-symbols-outlined" style="font-size: 17px; margin-left: 5px; margin-top: 3px; font-family: 'Audiowide';">
-            My Communities
-            </span>
-          </a>
-        </li>
-        <li>
-          <a href="{% url 'create_community' %}">
-            <span class="material-symbols-outlined">
-            Overview
-            </span>
-            <span class="material-symbols-outlined" style="font-size: 15px; margin-left: 5px; margin-top: 0px; font-family: 'Audiowide';">
-            Create Community
-            </span>
-          </a>
-        </li>
-
         <li>
           <a href="{% url 'notifications' %}">
             <span class="material-symbols-outlined">
@@ -592,6 +595,9 @@ window.onload = function() {
             </span>
       </div>
     </div>
+    </nav>
+</div>
+
   </nav>
 </body>
 {% else %}
@@ -659,10 +665,8 @@ window.onload = function() {
             </div>
         {% endfor %}
     </div>
-   <button class="hamburger" onclick="toggleSidebar()">☰</button>
-    <h1>32erwsfdgerww
-    </h1>
-<div class="sidebar-container hidden">
+<button class="hamburger" onclick="toggleSidebar()" style="z-index: 9999;">☰</button>
+<div class="sidebar-container">
     <nav class="sidebar">
         <div>
             <a href="{% url 'index' %}">
@@ -755,7 +759,7 @@ window.onload = function() {
           {% if user.is_authenticated %}
                 <a href="{% url 'profile_settings' user.username %}">
             {% else %}
-                    <a href="{% url 'login'  %}" style="text-decoration: none; color: white;">
+                    <a href="{% url 'login' %}" style="text-decoration: none; color: white;">
             {% endif %}
 
             <span class="material-symbols-outlined" style="color: #ccc;">
@@ -819,7 +823,7 @@ window.onload = function() {
       <div class="profileclass">
           <img class="picture-circle" src="{% static 'images/profile_placeholder.jpg' %}">
         <div>
-          <h3 class="username" style="margin-left: -40px;" >{{user.username}}</h3>
+          <h3 class="username" style="margin-left: -40px;" >Guest</h3>
             </div>
             <span class="material-icons-outlined">
             </span>

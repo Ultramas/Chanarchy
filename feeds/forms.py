@@ -5,7 +5,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 
 from imagekit.forms import ProcessedImageField
 
-from .models import IGPost, UserProfile, Comment, Like, SettingsModel, Community
+from .models import IGPost, UserProfile, Comment, Like, SettingsModel, Community, BackgroundTheme, Room
 
 
 class UserCreateForm(UserCreationForm):
@@ -52,6 +52,12 @@ class SettingsForm(forms.ModelForm):
         return instance
 
 
+class RoomSettings(forms.ModelForm):
+    class Meta:
+        model = Room
+        fields = ['public', 'logo']
+
+
 class CreateCommunityForm(forms.ModelForm):
     name = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Name Your Community'}))
     cover_image = forms.ImageField()
@@ -78,9 +84,6 @@ class CommentForm(ModelForm):
     class Meta:
         model = Comment
         fields = ['comment']
-
-
-from .models import BackgroundTheme
 
 
 class BackgroundThemeForm(forms.ModelForm):

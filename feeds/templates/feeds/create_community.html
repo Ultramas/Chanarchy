@@ -12,9 +12,14 @@
 
 <style>
     body {
-  background: linear-gradient(45deg, #fc466b, #3f5efb);
-  height: 100vh;
   font-family: "Montserrat", sans-serif;
+}
+
+body.white {
+  background: linear-gradient(45deg, #fc466b, #3f5efb);
+  background-attachment: fixed; /* Fixes the background */
+  background-size: cover;
+  background-repeat: no-repeat;
 }
 
 .container {
@@ -191,7 +196,7 @@ button:focus {
 
 </style>
 </head>
-<body class="white" style="background: url('';  alt=''; background-size: cover; background-repeat: no-repeat;">
+<body class="white" style="background-size: cover; background-repeat: no-repeat; background: linear-gradient(45deg, #fc466b, #3f5efb);">
 <div class="container">
 <div class="row auth-form">
 <br>

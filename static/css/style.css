@@ -249,7 +249,7 @@ a:hover {
 .card {
   background-color: #fff;
   margin-bottom: 50px;
-  border: 1px solid #efefef;
+  /*border: 1px solid #efefef;*/
   border-radius: 3px; }
   .card__panel-head {
     background: #fff;
