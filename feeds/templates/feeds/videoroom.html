@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<head>
+
+    <link rel='stylesheet' type='text/css' media='screen' href="{% static 'css/main.css' %}">
+
+    {% if current_theme %}
+    {% if current_theme.file %}
+        <style>
+            body {
+        background-image: url("{{ current_theme.file.url }}");
+        background-size: cover;
+        background-attachment: fixed;
+            }
+        </style>
+    {% else %}
+        <p>Error: Current theme does not have an image.</p>
+    {% endif %}
+{% else %}
+    <p>Error: No current theme found.</p>
+{% endif %}
+</head>
+
+<main>
+    <section id="room-name-wrapper">
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <h1>Room Name: <span id="room-name"></span></h1>
+    </section>
+
+    <section id="video-streams"></section>
+    <section id="controls-wrapper">
+        <div class="icon-wrapper">
+
+            <img style="padding: 10 10 10 10; width: 50px; height: 50px;" style="control-icon" class="control-icon" id="mic-btn" src="{% static 'css/images/microphone.svg' %}">
+        </div>
+
+        <div class="icon-wrapper">
+
+            <img style="padding: 10 10 10 10; width: 50px; height: 50px;" class="control-icon" id="camera-btn" src="{% static 'css/images/lobbyvideo.png' %}">
+        </div>
+
+        <div class="icon-wrapper">
+
+            <img style="padding: 10 10 10 10;width: 50px; height: 50px;" class="control-icon" id="leave-btn" src="{% static 'css/images/leave.svg' %}">
+        </div>
+    </section>
+</main>
+
+
+<script type="text/javascript" src="{% static 'css/js/AgoraRTC_N-4.8.0.js' %}"></script>
+<script type="text/javascript" src="{% static 'css/js/streams.js' %}" ></script>
+
+    <script src="{% static 'css/js/script.js' %}"></script>
+    <script src="{% static 'css/js/darkmode.js' %}"></script>
+    <script src="{% static 'css/js/navbar.js' %}"></script>
+    <script src="{% static 'css/js/scroll.js' %}"></script>
+
+{% endblock content %}

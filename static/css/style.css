@@ -39,12 +39,12 @@ a:hover {
   text-decoration: none; }
 
 .content-wrapper {
-  margin-top: 57px;
+  /*margin-top: 57px;
   margin-bottom: 60px;
   background-color: #fafafa; }
   @media screen and (max-width: 768px) {
     .content-wrapper {
-      margin-top: 50px; } }
+      margin-top: 50px; } }*/
 
 .picture-circle, .picture-circle--medium, .picture-circle--small {
   border-radius: 100%;

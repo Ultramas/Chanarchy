@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<button id="generate-invite" class="btn btn-primary" data-room-name="{{ room.name }}">Generate Invite Link</button>
+<p id="invite-link"></p> <!-- To show the generated invite link -->
+<script>
+    document.getElementById('generate-invite').addEventListener('click', function() {
+    const roomName = this.getAttribute('data-room-name');
+
+    // Send an AJAX request to generate the invite link
+    fetch(`/generate_invite/${roomName}/`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Display the invite link in a paragraph
+        const inviteLink = data.invite_link;
+        const linkParagraph = document.getElementById('invite-link');
+        linkParagraph.textContent = inviteLink;
+
+        // Copy the invite link to the clipboard
+        navigator.clipboard.writeText(inviteLink)
+            .then(() => {
+                alert('Invite link copied to clipboard!');
+            })
+            .catch(err => {
+                console.error('Failed to copy invite link: ', err);
+            });
+    })
+    .catch(err => {
+        console.error('Error generating invite link: ', err);
+    });
+});
+
+</script>
+</body>
+</html>

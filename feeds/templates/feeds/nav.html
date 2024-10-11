@@ -256,6 +256,17 @@ hr {
   text-overflow: ellipsis;
 }
 
+@media only screen and (max-width: 768px) {
+  .container.mobile {
+    display: block;
+  }
+}
+
+@media only screen and (min-width: 769px) {
+  .container.mobile {
+    display: none;
+  }
+}
 
 
 </style>
@@ -336,9 +347,11 @@ window.addEventListener("load", function () {
                     <li><a href="{% url 'login' %}">Login</a></li>
                     <li><a href="{% url 'signup' %}">Signup</a></li>
                 {% endif %}
+            </ul>
         </div>
       </div>
-      <div class="container mobile">
+
+     <div class="container mobile">
         {% if request.user.is_authenticated %}
           <a href="{% url 'index' %}">
             <div class="col-xs-3">
@@ -373,6 +386,20 @@ window.addEventListener("load", function () {
           </div>
         {% endif %}
       </div>
+</div>
+
+    <div class="container mobile">
+    {% if request.user.is_authenticated %}
+        <a href="{% url 'index' %}"></a>
+    {% else %}
+        <div class="navbar-header">
+            <a href="/" class="navbar-brand">Chanarchy</a>
+            <a href="{% url 'login' %}" class="navbar-brand">Login</a>
+            <a href="{% url 'signup' %}" class="navbar-brand">Signup</a>
+        </div>
+    {% endif %}
+</div>
+
 </div>
 
 

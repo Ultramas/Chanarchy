@@ -59,11 +59,10 @@ class RoomSettings(forms.ModelForm):
 
 
 class CreateCommunityForm(forms.ModelForm):
-    name = forms.CharField(widget=forms.TextInput(attrs={'placeholder': 'Name Your Community'}))
+    name = forms.CharField(widget=forms.TextInput(attrs={'readonly': 'readonly'}))  # Make name field read-only
     cover_image = forms.ImageField()
+    banner = forms.ImageField(required=False)
     description = forms.CharField(widget=forms.Textarea(attrs={'placeholder': 'Describe Your Community!'}))
-
-    # Add the checkbox fields with required=False
     public = forms.BooleanField(required=False)
     no_profanity = forms.BooleanField(required=False)
     nsfw_inclusive = forms.BooleanField(required=False)
@@ -73,8 +72,25 @@ class CreateCommunityForm(forms.ModelForm):
         fields = ('name', 'cover_image', 'description', 'public', 'no_profanity', 'nsfw_inclusive')
 
     def save(self, commit=True):
-        instance = super().save(commit=False)
-        instance.user = self.instance.user
+        if not self.instance.pk:
+            self.instance.user = self.initial.get('user')  # Get the user from initial data
+
+        # Check if an instance with the same user and name exists
+        existing_instance = Community.objects.filter(user=self.instance.user, name=self.cleaned_data['name']).first()
+
+        if existing_instance:
+            # If an existing instance is found, update it
+            instance = existing_instance
+            instance.cover_image = self.cleaned_data.get('cover_image', instance.cover_image)
+            instance.description = self.cleaned_data.get('description', instance.description)
+            instance.public = self.cleaned_data.get('public', instance.public)
+            instance.no_profanity = self.cleaned_data.get('no_profanity', instance.no_profanity)
+            instance.nsfw_inclusive = self.cleaned_data.get('nsfw_inclusive', instance.nsfw_inclusive)
+        else:
+            # If no existing instance, create a new one
+            instance = super().save(commit=False)
+            instance.user = self.instance.user  # Ensure user is assigned
+
         if commit:
             instance.save()
         return instance

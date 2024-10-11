@@ -1,0 +1,74 @@
+{% extends 'feeds/base.html' %}
+{% load static custom_tags %}
+
+{% block content %}
+<br>
+<br>
+<br>
+<h1 style="text-align: center;">Chat with {{ room.receiver.username }}</h1>
+
+<!-- Messages container -->
+<div class="messages-container" id="messages-container" style="margin: 0 auto; display: flex; flex-direction: column; align-items: flex-start;">
+    {% for message in messages %}
+        <div class="message" style="display: flex; flex-direction: row; align-items: center; margin-bottom: 10px; margin-left: 20%;">
+            <a href="{{ message.sender.profile_url }}">
+                <img src="{{ message.sender.profile_pic_url }}" alt="{{ message.sender.username }}'s avatar" style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px;">
+            </a>
+            <div>
+                <strong>{{ message.sender.username }}:</strong> {{ message.text }}
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<br>
+<!-- Form to submit a new message -->
+<form id="message-form" method="POST" style="justify-content: center; margin-left: auto; margin-right: auto; display: flex; flex-direction: row;">
+    {% csrf_token %}
+    <textarea name="message" id="message-input" rows="3" placeholder="Type your message here..."></textarea>
+    <button type="submit">Send</button>
+</form>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript">
+    // Submit form using AJAX
+// Submit form using AJAX
+$('#message-form').on('submit', function(event) {
+    event.preventDefault();  // Prevent the form from submitting the usual way
+
+    $.ajax({
+        url: "",  // Send to the current URL (room label is already included)
+        type: "POST",
+        data: {
+            'message': $('#message-input').val(),
+            'csrfmiddlewaretoken': '{{ csrf_token }}'
+        },
+        success: function(response) {
+            $('#message-input').val('');  // Clear the input field after message is sent
+            $('#messages-container').append(response.html);  // Append new message with avatar and profile link
+        },
+        error: function(xhr, errmsg, err) {
+            console.log(xhr.status + ": " + xhr.responseText);
+        }
+    });
+});
+
+    // Function to fetch new messages using AJAX
+    function fetchMessages() {
+        $.ajax({
+            url: "",  // Use the same URL for fetching messages
+            type: "GET",
+            success: function(response) {
+                $('#messages-container').html(response.html);  // Replace the messages container content with new messages
+            },
+            error: function(xhr, errmsg, err) {
+                console.log(xhr.status + ": " + xhr.responseText);
+            }
+        });
+    }
+
+    // Polling to fetch messages every 5 seconds
+    setInterval(fetchMessages, 5000);  // Update messages every 5 seconds
+</script>
+
+{% endblock %}

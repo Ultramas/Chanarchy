@@ -1,4 +1,6 @@
 import datetime
+import os
+from random import random, randint
 from venv import logger
 
 from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
@@ -15,7 +17,32 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
+import os
+import time
+import json
 
+from django.http.response import JsonResponse, HttpResponseNotFound, HttpResponseBadRequest
+from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
+
+from django.shortcuts import render
+
+from .RtcTokenBuilder import RtcTokenBuilder, Role_Attendee
+from pusher import Pusher
+
+# Instantiate a Pusher Client
+pusher_client = Pusher(app_id=os.environ.get('PUSHER_APP_ID'),
+                       key=os.environ.get('PUSHER_KEY'),
+                       secret=os.environ.get('PUSHER_SECRET'),
+                       ssl=True,
+                       cluster=os.environ.get('PUSHER_CLUSTER')
+                       )
+
+from .models import Call, CallUser, RoomMember
+
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.contrib.auth import get_user_model
 from guest_user.mixins import RegularUserRequiredMixin
 from imagekit.models import ProcessedImageField
 from annoying.decorators import ajax_request
@@ -136,6 +163,14 @@ class CreateCommunityView(CreateView):
     template_name = 'feeds/create_community.html'
     success_url = reverse_lazy('mycommunities')
 
+    def get_initial(self):
+        # Get room_name from the GET parameters or session
+        room_name = self.request.GET.get('room_name', None)
+        if room_name:
+            # Prepopulate the name field with the room_name
+            return {'name': room_name}
+        return super().get_initial()
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         signed_in_user = self.request.user
@@ -147,14 +182,33 @@ class CreateCommunityView(CreateView):
         return context
 
     def form_valid(self, form):
-        # Perform additional actions before saving the form if necessary
+        # Log form data before saving
+        print("Form is valid. Here's the data:", form.cleaned_data)
+
+        # Ensure the user is assigned to the community
         form.instance.user = self.request.user
+
+        # Additional actions before saving, if needed
+        # Return the default behavior with the form saved
         return super().form_valid(form)
 
-    def form_invalid(self, form):
-        # This will help debug why the form is invalid
-        print(form.errors)  # You can log this for debugging
-        return self.render_to_response(self.get_context_data(form=form))
+    def post(self, request, *args, **kwargs):
+
+        room_name = request.GET.get('room_name', '')  # Get the room name from the query params
+
+        if request.method == 'POST':
+            form = CreateCommunityForm(request.POST, request.FILES, initial={'user': request.user})
+            if form.is_valid():
+                # Save community with the room name
+                community = form.save(commit=False)
+                community.name = room_name  # Use the pre-filled room_name
+                community.user = request.user
+                community.save()
+                return redirect(reverse('room', kwargs={'room': community.name}))
+        else:
+            form = CreateCommunityForm(initial={'name': room_name, 'user': request.user})
+
+        return render(request, 'create_community.html', {'form': form, 'room_name': room_name})
 
 
 class MyCommunityView(ListView):
@@ -1007,11 +1061,17 @@ class RoomView(TemplateView):
 
 
 def room(request, room):
-    username = request.GET.get('username')
+    # Get the username from the GET parameters or fall back to the session or authenticated user
+    username = request.GET.get('username') or request.session.get('username') or (request.user.username if request.user.is_authenticated else None)
 
     profile_details = UserProfile.objects.filter(user__username=username).first()
 
-    return render(request, 'room.html', {
+    signed_in_user = request.user if request.user.is_authenticated else None
+
+    # Assuming you also need to fetch room details
+    room_details = Room.objects.filter(name=room).first()
+
+    return render(request, 'feeds/room.html', {
         'username': username,
         'room': room,
         'signed_in_user': signed_in_user,
@@ -1022,23 +1082,26 @@ def room(request, room):
 
 def checkview(request):
     room = request.POST['room_name']
-    username = request.POST['username']
+    username = request.POST.get('username', request.user.username)
 
     request.session['room_name'] = room
     request.session['username'] = username
 
-    # Check if room exists in the database
+    # Check if the room exists in the database
     if Room.objects.filter(name=room).exists():
-        return redirect('/new_chat/' + room + '/?username=' + username)
+        return redirect(f'/new_chat/{room}/?username={username}')
     else:
-        # Create room and assign user if authenticated
-        new_room = Room.objects.create(name=room)
-        signed_in_user = request.user
-        print('the room owner is ' + str(signed_in_user))
-        new_room.signed_in_user = signed_in_user if signed_in_user.is_authenticated else None
-        new_room.save()
-        # Redirect to create_room page after successful creation (assuming it exists)
-        return redirect('create_community')  # Assuming you have a URL pattern named 'create_room'
+        signed_in_user = request.user if request.user.is_authenticated else None
+        # You can create a room here if needed
+
+        # Create a corresponding community if it doesn't exist
+        community = Community.objects.filter(name=room).first()
+        if not community:
+            print('Community does not exist, creating...')
+            # You can create the community here if needed
+
+        # Redirect to the community creation form and pass the room name as a query parameter
+        return redirect(f'/create_community?room_name={room}&username={username}')
 
 
 @csrf_exempt
@@ -1160,7 +1223,6 @@ def send_post_to_friend(request, post_id, room_name):
         messages.error(request, 'You are not allowed to send a post to this room.')
 
     return redirect('room', room_name=room.name)
-
 
 
 def getMessages(request, room):
@@ -1347,3 +1409,316 @@ class ItemDelete(DeleteView):
         return context
 
 
+def lobby(request):
+    return render(request, 'lobby.html')
+
+
+@method_decorator(login_required(), name='dispatch')
+class CallUserView(View):
+    template_name = 'lobby.html'
+
+    def get(self, request, *args, **kwargs):
+        context = self.get_context_data()
+        User = get_user_model()
+        all_users = User.objects.exclude(id=request.user.id).only('id', 'username')
+        context['allUsers'] = all_users
+        return render(request, self.template_name, context)
+
+    def get_context_data(self, **kwargs):
+        context = {}
+        username = self.request.GET.get('username')
+        profile_details = UserProfile.objects.filter(user__username=username).first()
+        context['username'] = username
+        context['profile_details'] = profile_details
+
+        current_user = self.request.user
+        current_theme = BackgroundTheme.objects.filter(user=current_user, current_theme=True).first()
+        context['current_theme'] = current_theme
+
+        return context  # return the context dictionary
+
+    def post(self, request):
+        body = json.loads(request.body.decode('utf-8'))
+
+        user_to_call = User.objects.get(id=body['user_to_call'])
+        caller = request.user
+
+        # Create a new Call object
+        call = Call.objects.create(channel_name=body['channel_name'])
+
+        # Create new CallUser objects for the caller and the user to call
+        CallUser.objects.create(user=caller, call=call, status='ONLINE')
+        CallUser.objects.create(user=user_to_call, call=call, status='OFFLINE')
+
+        # Trigger the Pusher event as before...
+
+        return JsonResponse({'message': 'call has been placed'})
+
+
+def pusher_auth(request):
+    payload = pusher_client.authenticate(
+        channel=request.POST['channel_name'],
+        socket_id=request.POST['socket_id'],
+        custom_data={
+            'user_id': request.user.id,
+            'user_info': {
+                'id': request.user.id,
+                'name': request.user.username
+            }
+        })
+    return JsonResponse(payload)
+
+
+def generate_agora_token(request):
+    appID = os.environ.get('AGORA_APP_ID')
+    appCertificate = os.environ.get('AGORA_APP_CERTIFICATE')
+    channelName = json.loads(request.body.decode(
+        'utf-8'))['channelName']
+    userAccount = request.user.username
+    expireTimeInSeconds = 3600
+    currentTimestamp = int(time.time())
+    privilegeExpiredTs = currentTimestamp + expireTimeInSeconds
+
+    token = RtcTokenBuilder.buildTokenWithAccount(
+        appID, appCertificate, channelName, userAccount, Role_Attendee, privilegeExpiredTs)
+
+    return JsonResponse({'token': token, 'appID': appID})
+
+
+def call_user(request):
+    body = json.loads(request.body.decode('utf-8'))
+
+    user_to_call = body['user_to_call']
+    channel_name = body['channel_name']
+    caller = request.user.id
+
+    pusher_client.trigger(
+        'presence-online-channel',
+        'make-agora-call',
+        {
+            'userToCall': user_to_call,
+            'channelName': channel_name,
+            'from': caller
+        }
+    )
+    return JsonResponse({'message': 'call has been placed'})
+
+
+class VideoRoomView(TemplateView):
+    template_name = 'videoroom.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        current_user = self.request.user
+        current_theme = BackgroundTheme.objects.filter(user=current_user.id, current_theme=True).first()
+        context['current_theme'] = current_theme
+        return context
+
+
+def getToken(request):
+    appId = os.getenv('AGORA_APP_ID')
+    appCertificate = os.getenv('AGORA_APP_CERTIFICATE')
+    channelName = request.GET.get('channel')
+    uid = random.randint(1, 230)
+    expirationTimeInSeconds = 3600
+    currentTimeStamp = int(time.time())
+    privilegeExpiredTs = currentTimeStamp + expirationTimeInSeconds
+    role = 1
+
+    token = RtcTokenBuilder.buildTokenWithUid(appId, appCertificate, channelName, uid, role, privilegeExpiredTs)
+
+    return JsonResponse({'token': token, 'uid': uid}, safe=False)
+
+
+@csrf_exempt
+def createMember(request):
+    data = json.loads(request.body)
+    member, created = RoomMember.objects.get_or_create(
+        name=data['name'],
+        uid=data['UID'],
+        room_name=data['room_name']
+    )
+
+    return JsonResponse({'name':data['name']}, safe=False)
+
+
+def getMember(request):
+    uid = request.GET.get('UID')
+    room_name = request.GET.get('room_name')
+
+    member = RoomMember.objects.get(
+        uid=uid,
+        room_name=room_name,
+    )
+    name = member.name
+    return JsonResponse({'name':member.name}, safe=False)
+
+
+@csrf_exempt
+def deleteMember(request):
+    data = json.loads(request.body)
+    member = RoomMember.objects.get(
+        name=data['name'],
+        uid=data['UID'],
+        room_name=data['room_name']
+    )
+    member.delete()
+    return JsonResponse('Member deleted', safe=False)
+
+
+def room_access_checker(request, room_name, invite_code=None):
+    room = get_object_or_404(Room, name=room_name)
+    user = request.user
+
+    # Check if the user is already a member or has a valid invite code
+    if room.check_user_access(user, invite_code=invite_code):
+        # If access is granted (member or valid invite), redirect to the room page
+        return redirect('room', room=room_name)
+    elif invite_code and invite_code == room.invite_code:
+        # If user is not a member but has a valid invite, redirect to the invite acceptance page
+        return redirect('invite_page', room_name=room_name, invite_code=invite_code)
+
+    # If access is denied (no valid invite or not a member)
+    messages.error(request, "You do not have permission to access this room.")
+    return redirect('home')
+
+
+def invite_page(request, room_name, invite_code):
+    # Fetch the room based on the room name
+    room = get_object_or_404(Room, name=room_name)
+
+    # Check if the invite code is valid
+    if invite_code == room.invite_code:
+        context = {
+            'room': room,
+            'invite_code': invite_code,
+        }
+        # Render the invite page with room details
+        return render(request, 'room/invite_page.html', context)
+    else:
+        messages.error(request, "Invalid invite code.")
+        return redirect('home')
+
+
+def accept_invite(request, room_name, invite_code):
+    room = get_object_or_404(Room, name=room_name)
+    user = request.user
+
+    # Check if invite code is valid and user is not already a member
+    if invite_code == room.invite_code and user not in room.members.all():
+        # Add the user to the room members
+        room.members.add(user)
+        messages.success(request, f"You have joined {room.name}!")
+        return redirect('room', room=room_name)
+
+    # If invite code is invalid or user is already a member
+    messages.error(request, "Invite code is invalid or you are already a member.")
+    return redirect('home')
+
+@login_required
+def generate_invite_link(request, room_name):
+    room = get_object_or_404(Room, name=room_name)
+
+    # Generate a new invite code if it doesn't exist or generate a new one
+    if not room.invite_code:
+        room.generate_invite_code()
+
+    # Construct the full invite URL
+    invite_link = request.build_absolute_uri(f'/room/{room_name}/invite/{room.invite_code}/')
+
+    # Return the invite link as a JSON response
+    return JsonResponse({'invite_link': invite_link})
+
+
+def get_or_create_direct_message(request, friend_username):
+    # Get the current user
+    user = request.user
+
+    # Find the friend
+    friend = get_object_or_404(User, username=friend_username)
+
+    # Check if a DirectMessages instance already exists between the user and the friend
+    room_label = f"{user.username}_{friend.username}" if user.username < friend.username else f"{friend.username}_{user.username}"
+    direct_message, created = DirectMessages.objects.get_or_create(label=room_label, sender=user, receiver=friend)
+
+    # Redirect to the chat room page
+    return redirect('chat_room', label=direct_message.label)
+
+
+
+from django.http import JsonResponse
+
+
+from django.views import View
+from django.http import JsonResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.template.loader import render_to_string
+from .models import DirectMessages, DirectMessageText
+
+
+class DirectMessageView(View):
+    template_name = 'feeds/direct_messages.html'
+
+    def get(self, request, label):
+        room = get_object_or_404(DirectMessages, label=label)
+        messages = DirectMessageText.objects.filter(room=room).order_by('timestamp')
+
+        # Add profile data for each message sender
+        for message in messages:
+            profile = UserProfile.objects.filter(user=message.sender).first()
+            if profile:
+                message.sender.profile_url = profile.get_profile_url()
+                message.sender.profile_pic_url = profile.profile_pic.url
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            html = render_to_string('feeds/direct_messages.html', {'messages': messages}, request=request)
+            return JsonResponse({'html': html})
+
+        context = {
+            'room': room,
+            'messages': messages,
+        }
+        return render(request, self.template_name, context)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        signed_in_user = self.request.user
+        if self.request.user.is_authenticated:
+            context['theme'] = BackgroundTheme.objects.filter(is_active=1, user=signed_in_user)
+
+            current_user = self.request.user
+            newprofile = UserProfile.objects.filter(is_active=1, user=current_user)
+            context['Profiles'] = newprofile
+
+            # Process profiles to add URLs and avatars
+            for newprofile in context['Profiles']:
+                user = newprofile.user
+                profile = UserProfile.objects.filter(user=user).first()
+                if profile:
+                    newprofile.newprofile_profile_picture_url = profile.profile_pic.url
+                    newprofile.newprofile_profile_url = newprofile.get_profile_url()
+
+    def post(self, request, label):
+        room = get_object_or_404(DirectMessages, label=label)
+
+        # Handle AJAX request for sending a new message
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            message_text = request.POST.get('message', None)
+            if message_text:
+                new_message = DirectMessageText.objects.create(
+                    room=room,
+                    sender=request.user,
+                    text=message_text
+                )
+                new_message.save()
+
+                # Attach profile data for the sender
+                profile = UserProfile.objects.filter(user=request.user).first()
+                if profile:
+                    new_message.sender.profile_url = profile.get_profile_url()
+                    new_message.sender.profile_pic_url = profile.profile_pic.url
+
+                html = render_to_string('feeds/direct_messages.html', {'messages': [new_message]}, request=request)
+                return JsonResponse({'html': html})
+
+        return HttpResponseRedirect(request.path_info)

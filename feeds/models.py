@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 from random import randint
 from django.core.exceptions import ValidationError
@@ -9,6 +10,9 @@ from django.utils import timezone
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 
+from django.db import models
+from django.urls import reverse
+from django.utils import timezone
 from django.db.models.signals import post_save, post_delete, pre_delete
 from notifications.models import Notification as BaseNotification
 
@@ -245,18 +249,13 @@ class DirectMessages(models.Model):
 
 
 class DirectMessageText(models.Model):
-    room = models.ForeignKey(DirectMessages, related_name="messages", on_delete=models.CASCADE)
+    room = models.ForeignKey(DirectMessages, related_name='directmessagetext_set', on_delete=models.CASCADE)
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     text = models.TextField()
-    timestamp = models.DateTimeField(default=datetime.now, db_index=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.text + " S:" + self.sender.username
-
-    def get_profile_url(self):
-        profile = UserProfile.objects.filter(user=self.signed_in_user).first()
-        if profile:
-            return reverse('profile', args=[str(profile.pk)])
+        return f"{self.sender.username}: {self.text}"
 
 
 class Message(models.Model):
@@ -424,7 +423,7 @@ class Friend(models.Model):
         if self.friend_username is None:
             return reverse("new_chat")
 
-        # If friend_username exists, use it with BackgroundTheme or the new_chat_create view
+        # If friend_username exists, use it for the new_chat_create view
         room_url = reverse("new_chat_create", kwargs={'username': self.friend_username})
 
         # Construct the query parameters with the username
@@ -457,15 +456,85 @@ def update_friend_username(sender, instance, created, **kwargs):
 post_save.connect(update_friend_username, sender=Friend)
 
 
+
+
+
+class Community(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Community Leader", blank=True)
+    name = models.CharField(max_length=200)
+    cover_image = models.ImageField()
+    banner = models.ImageField(blank=True, null=True)
+    description = models.CharField(max_length=800)
+    label = models.SlugField(blank=True, null=True, unique=True)
+    invite = models.CharField(blank=True, null=True, max_length=300)
+    random_tackon = models.CharField(max_length=255, unique=True, default=uuid.uuid4)
+    members = models.ManyToManyField(User, related_name="community_members", blank=True)
+    no_profanity = models.BooleanField(default=False)
+    nsfw_inclusive = models.BooleanField(default=False)
+    discovery_level = models.CharField(max_length=1, default='N')
+    public = models.BooleanField(default=False)
+    is_active = models.IntegerField(default=1,
+                                    blank=True,
+                                    null=True,
+                                    help_text='1->Active, 0->Inactive',
+                                    choices=((1, 'Active'), (0, 'Inactive')), verbose_name="Set active?")
+
+    def save(self, *args, **kwargs):
+        creating = not self.pk  # Check if this is a new community creation
+
+        if not self.random_tackon:
+            self.random_tackon = ''.join([str(randint(0, 9)) for _ in range(10)])
+
+        if not self.label and self.user and self.name:
+            self.label = f"{self.user.username}-{self.name}"
+
+        super().save(*args, **kwargs)  # Save to generate a valid primary key
+
+        # Automatically create or update the related Room
+        if creating:
+            room = Room.objects.create(
+                name=self.name,
+                signed_in_user=self.user,
+                public=self.public,  # Match the community's public status
+                logo=self.cover_image,  # Use community's cover image for room logo
+            )
+        else:
+            # If the Community already exists, update the Room's name
+            if self.room_set.exists():  # Check if related Room exists
+                room = self.room_set.first()
+                room.name = self.name  # Update Room name to match Community name
+                room.save()
+                print('room name is saved to ' + room.name)
+
+        # Update invite link using the room URL
+        room_url = reverse('room', kwargs={'room': room.name})
+        self.invite = f"{room_url}/{self.random_tackon}"
+
+        # Add the user as a member of the community
+        if self.user:
+            self.members.add(self.user)
+
+        super().save(update_fields=['invite'])  # Save again only to update invite field
+
+    def __str__(self):
+        return f"{self.name} owned by {self.user}"
+
+    class Meta:
+        unique_together = ("user", "name")
+        verbose_name_plural = "Communities"
+
+
 class Room(models.Model):
-    name = models.CharField(max_length=1000)
+    name = models.CharField(max_length=1000, null=True, blank=True)
     signed_in_user = models.ForeignKey(User, blank=True, null=True, on_delete=models.CASCADE, related_name='room',
                                        verbose_name="Room Creator")
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, verbose_name="Community", blank=True, null=True)
     members = models.ManyToManyField(User, blank=True, related_name="members")
     time = models.DateTimeField(default=timezone.now, blank=True)
     public = models.BooleanField(default=False, verbose_name="Make Public?")
     logo = models.FileField(blank=True, null=True, verbose_name="Logo")
     shared_posts = models.ManyToManyField(IGPost, blank=True, related_name='rooms_shared_with')
+    invite_code = models.CharField(max_length=100, blank=True, null=True, unique=True)  # Store invite codes
     is_active = models.IntegerField(default=1,
                                     blank=True,
                                     null=True,
@@ -478,34 +547,55 @@ class Room(models.Model):
         else:
             return str('Guest')
 
-    def user_can_join(self, user):
+    def add_member(self, user):
+        if user not in self.members.all():
+            self.members.add(user)
+            return True
+        return False
+
+    def generate_invite_code(self):
+        """Generate a unique invite code for this room."""
+        self.invite_code = ''.join([str(randint(0, 9)) for _ in range(10)])
+        self.save()
+
+    def check_user_access(self, user, invite_code=None):
+        """
+        Check if a user can access the room.
+        If they are not a member, they must have a valid invite code to join.
+        """
         if self.public:
             print('public server')
             return True
-        else:
-            print('private server')
-            # Only allow signed-in users to join if the room is not public
-            if user.is_authenticated:
-                # Allow the room creator to join the room
-                if self.signed_in_user == user:
-                    return True
 
-                # Check if there's an accepted friend request between the user and the room creator
-                return FriendRequest.objects.filter(
-                    Q(sender=self.signed_in_user, receiver=user, status=FriendRequest.ACCEPTED) |
-                    Q(sender=user, receiver=self.signed_in_user, status=FriendRequest.ACCEPTED)
-                ).exists()
-            else:
-                return False
+        print('private server')
+        # Check if the user is already a member
+        if user in self.members.all():
+            return True
+
+        # Check if an invite code is provided and valid
+        if invite_code and invite_code == self.invite_code:
+            # Add the user to members and allow access
+            self.members.add(user)
+            return True
+
+        # Deny access if no invite code or incorrect code
+        return False
+
+    def get_room_url(self):
+        """Return the normal room URL, handle case where room name is blank."""
+        if not self.name:
+            return reverse("room", kwargs={'room': 'guest'})  # or handle as needed
+        return reverse("room", kwargs={'room': self.name})
 
     def get_absolute_url(self):
-        # Construct the URL for the room detail page
-        if self.name == '':
+        # Check if the room has a valid name
+        if not self.name:
             return reverse("room", kwargs={'room': ''})
 
-        room_url = reverse("room", kwargs={'room': self.name})
+        # Use signed_in_user (assumed to be the creator) for the username
+        room_url = reverse('room', kwargs={'username': self.signed_in_user.username, 'room': self.name})
 
-        # Construct the query parameters with the username
+        # Construct the query parameters with the room name
         final_url = f"{room_url}?username={self.name}"
 
         return final_url
@@ -535,58 +625,6 @@ class Achievements(models.Model):
 
     def __str__(self):
         return self.comment
-
-
-class Community(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Community Leader", blank=True)
-    name = models.CharField(max_length=200)
-    cover_image = models.ImageField()
-    banner = models.ImageField(blank=True, null=True)
-    description = models.CharField(max_length=800)
-    label = models.SlugField(blank=True, null=True, unique=True)
-    invite = models.CharField(blank=True, null=True, max_length=300)
-    random_tackon = models.CharField(max_length=10, unique=True, blank=True)
-    members = models.ManyToManyField(User, related_name="community_members", blank=True)
-    no_profanity = models.BooleanField(default=False)
-    nsfw_inclusive = models.BooleanField(default=False)
-    discovery_level = models.CharField(max_length=1, default='N')
-    public = models.BooleanField(default=False)
-    is_active = models.IntegerField(default=1,
-                                    blank=True,
-                                    null=True,
-                                    help_text='1->Active, 0->Inactive',
-                                    choices=((1, 'Active'), (0, 'Inactive')), verbose_name="Set active?")
-
-    def get_last_message(self):
-        message = Message.objects.filter(room=self).last()
-        return message.text if message else ""
-
-    def get_last_message_timestamp(self):
-        message = Message.objects.filter(room=self).last()
-        return message.timestamp if message else ""
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-        if not self.random_tackon:
-            self.random_tackon = ''.join([str(randint(0, 9)) for _ in range(10)])
-        if not self.label and self.user and self.name:
-            self.label = str(self.user) + self.name
-        if not self.user:
-            self.user = self.request.user
-
-        if self.user:
-            self.members.set([self.user])  # This sets the user as the sole member
-        if not self.invite and self.label:
-            self.invite = "https://chanarchy.org/" + self.label + "/" + self.random_tackon
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.name + " owned by " + str(self.user)
-
-    class Meta:
-        unique_together = ("user", "name")
-        verbose_name_plural = "Communities"
 
 
 class Roles(models.Model):
@@ -804,13 +842,6 @@ class DefaultAvatar(models.Model):
         verbose_name_plural = "Default Avatars"
 
 
-
-# todo_list/todo_app/models.py
-from django.db import models
-from django.urls import reverse
-from django.utils import timezone
-
-
 def one_week_hence():
     return timezone.now() + timezone.timedelta(days=7)
 
@@ -842,3 +873,47 @@ class EventItem(models.Model):
 
     class Meta:
         ordering = ["due_date"]
+
+
+class Call(models.Model):
+    channel_name = models.CharField(max_length=255)
+    is_active = models.IntegerField(default=1,
+                                    blank=True,
+                                    null=True,
+                                    help_text='1->Active, 0->Inactive',
+                                    choices=((1, 'Active'), (0, 'Inactive')), verbose_name="Set active?")
+
+    def __str__(self):
+        return self.channel_name
+
+
+class CallUser(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    call = models.ForeignKey(Call, on_delete=models.CASCADE, null=True)
+    STATUS_CHOICES = [
+        ('ONLINE', 'Online'),
+        ('OFFLINE', 'Offline'),
+    ]
+    status = models.CharField(max_length=7, choices=STATUS_CHOICES, default='OFFLINE')
+    flavor_text = models.CharField(max_length=1000, blank=True, null=True)
+    is_active = models.IntegerField(default=1,
+                                    blank=True,
+                                    null=True,
+                                    help_text='1->Active, 0->Inactive',
+                                    choices=((1, 'Active'), (0, 'Inactive')))
+
+    def __str__(self):
+        return self.user + " " + self.call
+
+    class Meta:
+        verbose_name = "Call User"
+
+
+class RoomMember(models.Model):
+    name = models.CharField(max_length=200)
+    uid = models.CharField(max_length=1000)
+    room_name = models.CharField(max_length=200)
+    insession = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name

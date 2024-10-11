@@ -1,0 +1,179 @@
+ {% load static %}
+ <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" >
+
+
+   <link rel="icon" type="image/x-icon" href="{{ BaseView.faviconcover.url }}">
+
+
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="msapplication-TileColor" content="#da532c">
+    <meta name="theme-color" content="#ffffff">
+
+
+  </head>
+   {% if user.is_authenticated %}
+
+  <body>
+
+       <header style="z-index: 100; width: 12.2%;">
+
+  <div class="column three mobile-twelve section_header_logo vertical-align-middle">
+
+ </div>
+
+
+     </header>
+
+<section class="gt_section-77035 gt_animation-zoom-out-left gt_animated" data-name="Header" style="height: auto;"> <div class="gt_header"> <div class="gt_flex gt_logo"> <div class="icon_when_scroll"> <div class="icon_when_scroll_content">  </div> </div> <div class="logo_header">
+
+
+    <div class = "navbarx">
+
+   <ul>
+  {% for column in Header %}
+    <div class="dropdown">
+      <a href="#{{ column.section }}" class="glass">{{ column.text }}</a>
+      <div class="dropdown-content">
+        {% for row in DropDown %}
+          {% if row.row == column.row %}
+            {% if row.url == 'http://127.0.0.1:8000/profile' %}
+              {% if row.opennew %}
+                <a href="{{ profile_url }}" target="_blank">{{ row.text }}</a>
+              {% else %}
+                <a href="{{ profile_url }}">{{ row.text }}</a>
+              {% endif %}
+            {% else %}
+              {% if row.opennew %}
+                <a href="{{ row.url }}" target="_blank">{{ row.text }}</a>
+              {% else %}
+                <a href="{{ row.url }}">{{ row.text }}</a>
+              {% endif %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</ul>
+
+    </div>
+
+
+      </div>
+
+  </div>
+<nav class="show">
+     <div  onclick="navToggle(this)" class="bell"></div>
+     <div onclick="navToggle(this)" class="hamburger">
+       <div class="bun"></div>
+       <div class="bun"></div>
+       <div class="bun"></div>
+     </div>
+
+
+<h2 class="navtext">Quasar</h2>
+    <div class="navItem" style='background: linear-gradient(33deg, rgba(255, 0, 0, 0.637), rgba(0, 26, 255, 0.637), rgba(0, 247, 255, 0.637)); '><a href="/">Home</a></div>
+     <div class="navItem3" style='background: linear-gradient(33deg, rgba(255, 0, 0, 0.637), rgba(0, 26, 255, 0.637), rgba(0, 247, 255, 0.637));'><a href="/home/" target="_blank">Community</a></div>
+     <div class="navItem2" style='background: linear-gradient(33deg, rgba(255, 0, 0, 0.637), rgba(0, 26, 255, 0.637), rgba(0, 247, 255, 0.637));'><a href="/lobby/">Video Chat</a></div>
+     <div class="navItem4" style='background: linear-gradient(33deg, rgba(255, 0, 0, 0.637), rgba(0, 26, 255, 0.637), rgba(0, 247, 255, 0.637));'><a href="/admin/" target="_blank">Administration</a></div>
+     <div class="navItem8" style='background: linear-gradient(33deg, rgba(255, 0, 0, 0.637), rgba(0, 26, 255, 0.637), rgba(0, 247, 255, 0.637));'><a href="/supportchat/">Support</a></div>
+     <div class="navItem11" style='background: linear-gradient(33deg, rgba(255, 0, 0, 0.637), rgba(0, 26, 255, 0.637), rgba(0, 247, 255, 0.637));'><a href="/accounts/logout/">Logout</a></div>
+<br>
+<br>
+
+
+</nav>
+    </div>
+</section>
+
+
+
+
+    </div>
+         </div>
+      </div>
+    </ul>
+
+</div> </a> </div> </div> </div> </div> </header>
+
+</body>
+
+  {% else %}
+
+
+  <body>
+       <header>
+
+  <div class="column three mobile-twelve section_header_logo vertical-align-middle">
+          <a class="logo" href="">
+          <img class="imageicon" src="{% static 'css/images/quasarlogo.png' %}"
+                alt="Quasar Logo" style="length: 120px; width: 180px;"></a>
+
+
+
+ </div>
+
+
+     </header>
+    <div class = "navbarx">
+
+    <ul>
+      {% for column in Header %}
+        <div class="dropdown">
+          <a href="#{{ column.section }}" class="glass"> {{ column.text }}</a>
+          <div class="dropdown-content">
+          {% for row in DropDown %}
+
+            {% if row.row == column.row %}
+
+                {% if row.opennew == True %}
+                    <a href="{{ row.url }}" target="_blank">{{ row.text }}</a>
+                {% else %}
+                    <a href="{{ row.url }}">{{ row.text }}</a>
+                {% endif %}
+            {% endif %}
+
+          {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </ul>      </div>
+
+
+      </div>
+    </ul>
+
+  </div>
+
+    </div>
+         </div>
+      </div>
+    </ul>
+
+
+  {% block javascript %}
+    <script src="{% static 'css/js/script.js' %}"></script>
+    <script src="{% static 'css/js/darkmode.js' %}"></script>
+    <script src="{% static 'css/js/navbar.js' %}"></script>
+    <script src="{% static 'css/js/scroll.js' %}"></script>
+    <script src="{% static 'css/js/cover.js' %}"></script>
+  {% endblock javascript %}
+
+
+       {% endif %}
+    {% block content %}
+    {% endblock content %}
+
+<footer>
+     <div class = "copyright">
+     <p>
+
+     </p>
+   </div>
+
+</footer>  </body>
+</html>

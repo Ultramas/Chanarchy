@@ -7,7 +7,7 @@ from django.views.generic import TemplateView
 from django.conf.urls.i18n import i18n_patterns
 
 from . import views
-from .views import FriendSearchResultsView
+from .views import FriendSearchResultsView, room_access_checker
 
 urlpatterns = [
     path('i18n/', include('django.conf.urls.i18n')),
@@ -44,8 +44,19 @@ urlpatterns = [
     path('inbox/', views.inbox, name='inbox'),
     path('inbox/<str:label>/', views.chat, name='chat'),
     path('new_chat/', views.ChatView.as_view(), name='new_chat'),
+    path('new_chat/<str:room>/', views.RoomView.as_view(), name='new_chat'),
+    path('direct_messages/<str:friend_username>/', views.get_or_create_direct_message, name='direct_messages'),
+    # URL to create or retrieve a DirectMessage room and redirect to the chat page
+    path('direct_messages/create/<str:friend_username>/', views.get_or_create_direct_message, name='create_direct_message'),
+
+    # URL to load the chat room (handled by DirectMessageView)
+    path('direct_messages/chat/<str:label>/', views.DirectMessageView.as_view(), name='chat_room'),
+
     path('user.username/<str:room>/', views.room, name='room'),
-    path('new_chat/<str:room>/', views.RoomView.as_view(), name='room'),
+    path('room/<str:room_name>/invite/<str:invite_code>/', views.room_access_checker, name='room_invite'),
+    path('invite/<str:room_name>/<str:invite_code>/', views.invite_page, name='invite_page'),
+    path('accept_invite/<str:room_name>/<str:invite_code>/', views.accept_invite, name='accept_invite'),
+    path('generate_invite/<str:room_name>/', views.generate_invite_link, name='generate_invite_link'),
     path('new_chat/checkview', views.checkview, name='checkview'),
     path('new_chat/send', views.send, name='send'),
     path('getMessages/<str:room>/', views.getMessages, name='getMessages'),
@@ -81,4 +92,7 @@ urlpatterns = [
     path('password-reset-complete/',
          auth_views.PasswordResetCompleteView.as_view(template_name='commons/password-reset/password_reset_complete.html'),
          name='password_reset_complete'),
+    path('lobby', views.lobby, name="lobby"),
+    path('videoroom/', views.VideoRoomView.as_view()),
+    path('get_token/', views.getToken),
 ]
