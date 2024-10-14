@@ -5,17 +5,72 @@
 
 {% block content %}
 <head>
-  <style>
+<style>
+    /* Hide mobile elements on screens larger than 768px */
+    @media (min-width: 768px) {
+      .mobile-block {
+        display: none;
+      }
+      .edit-mobile {
+        display: none;
+      }
+    }
+
+    /* Hide desktop elements on screens smaller than 768px */
+    @media (max-width: 767px) {
+      .desktop-block {
+        display: none;
+
+      }
+      .edit-desktop {
+        display: none;
+
+      }
+    }
+
+    .content-wrapper {
+      margin-top: 57px;
+      margin-bottom: 60px;
+      background-color: rgba(70, 70, 70, 0.6);
+    }
+
+    .picture-circle {
+      border-radius: 50px;
+      width: 50px;
+      height: 50px;
+      margin-top: 0%;
+    }
+
+    .edit-profile {
+      /* Add your button styling here */
+    }
+
+    .options-bubbles {
+      /* Add styling for options bubbles here */
+    }
+
   .content-wrapper {
     margin-top: 57px;
     margin-bottom: 60px;
     background-color: rgba(70, 70, 70, 0.6);
-    </style>
+
+  .picture-square:hover .overlay {
+    opacity: 1; /* Make the overlay visible */*/
+  z-index: 100; /* Ensure the overlay appears above other content
+  }
+
+  .picture-square:hover .content-link {
+    opacity: 1; /* Show the content on hover */*/
+  z-index: 100; /* Ensure the overlay appears above other content
+  }
+
+  </style>
 }
 </head>
 {% if user.is_authenticated %}
         {% for BackgroundTheme in Background %}
-<body style="background: url('{{BackgroundTheme.cover.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover;">
+<body style="background: url('{{BackgroundTheme.cover.url}}');  alt='{{ BackgroundTheme.alternate.url }}'; background-size: cover;
+  background-repeat: no-repeat;  background-attachment: fixed;">
 
         {% endfor %}
         {% else %}
@@ -28,16 +83,17 @@
     <div class="row">
       <div class="col-xs-4 left">
         {% if profile.profile_pic %}
-          <img class="picture-circle" src="{{ profile.profile_pic.url }}">
+          <img class="picture-circle" src="{{ profile.profile_pic.url }}" style="border-radius: 50px; width: 50px; height: 50px; margin-top: 20%; margin-left: 90%;">
         {% else %}
-          <img class="picture-circle" src="{% static 'images/profile_placeholder.jpg' %}">
+          <img class="picture-circle" src="{% static 'images/profile_placeholder.jpg' %}" style="border-radius: 50px; width: 50px; height: 50px;">
         {% endif %}
       </div>
-      <div class="col-xs-8 right">
+      <div class="col-xs-8 right" style="margin-top: 5%;">
         <div class="name-buttons">
           <h1 class="username" style="color: white;">{{ user.username }}</h1>
+          <br>
           {% if request.user == user %}
-            <a class="edit-desktop" href="{% url 'profile_settings' user.username %}">
+            <a class="edit-desktop" href="{% url 'profile_settings' user.username %}" style="margin-top: 10%;">
               <button class="edit-profile">Edit Profile</button>
             </a>
             <div class="options-bubbles" type="button" data-toggle="modal" data-target="#logoutModal">
@@ -102,22 +158,24 @@
     </div>
   </div>
 
-  <div class="profile__body">
-    <div class="row">
-      {% for post in profile.igpost_set.all reversed %}
-        <div class="col-xs-4">
-          <div class="picture-square" style="background-image: url({{ post.image.url }})">
-            <a href="{% url 'post' post.pk %}">
-              <div class="content">
-                <i class="fa fa-heart" aria-hidden="true"></i> {{ post.get_number_of_likes }}
-                <i class="fa fa-comment" aria-hidden="true"></i> {{ post.get_number_of_comments }}
-              </div>
-            </a>
-          </div>
+<div class="profile__body">
+  <div class="row" style="margin-left: 25%;">
+    {% for post in profile.igpost_set.all reversed %}
+      <div class="col-xs-4" style="margin-bottom: 50px;">
+        <div class="picture-square" style="background-image: url({{ post.image.url }}); height: 300px; width: 300px; background-size: cover; background-position: center; position: relative;">
+          <div class="overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.3); opacity: 0; transition: opacity 0.3s;"></div>
+          <a href="{% url 'post' post.pk %}" class="content-link" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s;">
+            <h3 style="margin-top: 0%; color: white;">{{ post.title }}</h3>
+            <div class="content" style="margin-top: 10%; color: white;">
+              <i class="fa fa-heart" aria-hidden="true" style="margin-right: 3px;"></i> {{ post.get_number_of_likes }}
+              <i class="fa fa-comment" aria-hidden="true" style="margin-left: 8px; margin-right: 3px;"></i> {{ post.get_number_of_comments }}
+            </div>
+          </a>
         </div>
-      {% endfor %}
-    </div>
+      </div>
+    {% endfor %}
   </div>
+</div>
 
 </div>
 </body>

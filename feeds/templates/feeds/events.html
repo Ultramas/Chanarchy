@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>{{ event_list.name }}</h1>
+  
+  <!-- Iterate over the event items returned by the view -->
+  <ul>
+    {% for item in object_list %}
+      <li>{{ item.name }} - {{ item.description }}</li>
+    {% empty %}
+      <li>No event items found.</li>
+    {% endfor %}
+  </ul>
+  
+  <!-- Alternatively, you can use the 'event_item' context variable if preferred -->
+  <h2>Active Event Items:</h2>
+  <ul>
+    {% for item in event_item %}
+      <li>{{ item.name }} - {{ item.description }}</li>
+    {% empty %}
+      <li>No active event items found.</li>
+    {% endfor %}
+  </ul>
+{% endblock %}

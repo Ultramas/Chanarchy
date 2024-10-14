@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import UserProfile, IGPost, Comment, Like, Message, Room, BackgroundTheme, BackgroundControl, Community, \
-    Roles, Friend, EventItem, EventList, CallUser, Call, DirectMessageText
+    Roles, Friend, EventItem, EventList, CallUser, Call, DirectMessageText, EventType
 
 # Register your models here.
 admin.site.register(UserProfile)
@@ -16,6 +16,7 @@ admin.site.register(Friend)
 admin.site.register(EventItem)
 admin.site.register(EventList)
 admin.site.register(DirectMessageText)
+admin.site.register(EventType)
 
 
 class CallUserAdmin(admin.ModelAdmin):

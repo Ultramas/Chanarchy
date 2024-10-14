@@ -175,6 +175,12 @@ select:focus,
 textarea:focus,
 button:focus {
   outline: none;
+
+.picture-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50px;
+  }
 }
 </style>
 </head>
@@ -182,15 +188,15 @@ button:focus {
 <div class="container" >
 <div class="row profile-settings">
   <div class="col-xs-12">
-    <div class="profile-pic-name">
+    <div class="profile-pic-name" style="margin-left: 48%; margin-bottom: 5%; margin-top: 10%;">
       {% if user.userprofile.profile_pic %}
-        <img class="picture-circle--medium" src="{{ user.userprofile.profile_pic.url }}">
+        <img class="picture-circle--medium" src="{{ user.userprofile.profile_pic.url }}" style="width: 50px; height: 50px; border-radius: 50px; margin-left: auto; margin-right: auto; ">
       {% else %}
         <img class="picture-circle--medium" src="{% static 'images/profile_placeholder.jpg' %}">
       {% endif %}
       <span class="username">{{ user.username }}</span>
     </div>
-    <form action="" method="post" enctype="multipart/form-data">
+    <form action="" method="post" enctype="multipart/form-data" style="width: 50%; margin-left: 30%;">
       {% csrf_token %}
           <div class="form-group">
         <label>{{ form.profile_pic.label }}</label>

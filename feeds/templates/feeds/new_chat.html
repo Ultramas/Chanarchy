@@ -132,28 +132,26 @@ button[type="submit"] {
   font-size: 30px;
 }
 
-            .logo-background {
+.logo-wrapper {
     position: relative;
 }
 
 .popout {
-    display: none; /* Hide by default */
-    position: absolute;
-    top: 50%; /* Center vertically relative to logo-background */
-    left: -150px; /* Position to the left of the logo-background */
-    transform: translateY(-50%); /* Center the popout vertically */
-    background-color: black; /* Black background */
-    color: white; /* White text for contrast */
+    display: none;
+    position: absolute; /* Fixed position to stay visible */
+    background-color: black;
+    color: white;
     padding: 10px;
     border-radius: 5px;
-    min-width: 120px; /* Minimum width for the popout */
+    min-width: 120px;
     text-align: center;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
-    z-index: 10;
+    z-index: 9999;
 }
 
-.logo-background:hover .popout {
-    display: block; /* Show on hover */
+.logo-wrapper:hover .popout,
+.popout:hover {
+    display: block;
 }
 
 
@@ -354,22 +352,28 @@ button[type="submit"] {
   </div>
   </div>
         <div class="communities" style="position: absolute; right: 0; width: 100px; height: 80vh; top: 6%;">
-            <div class="logo-background" style="width: 100px; height: 100px; background: rgba(0, 0, 255, 0.4); position: relative;">
+    <!-- Scrollable content -->
+        <div class="logo-background" style="width: 100px; height: 100px; background: rgba(0, 0, 255, 0.4); position: relative;">
                 <img src="{% static 'images/logo.png' %}" class="logo" style="width: 80px; height: 80px; margin-top: 10px; margin-left: 8px;">
+            </div>
+        <div class="community-background" style="width: 100px; height: 100%; background: rgba(0, 0, 255, 0.4); overflow-y: scroll; padding-bottom: 50px; position: relative;">
+                {% for Community in communityin %}
+                <div class="logo-wrapper" style="width: 100px; margin-top: 20px; position: relative;">
+                    <a href="{{ Community.get_absolute_url }}" class="logo-link" style="display: flex; justify-content: center;">
+                        <img src="{{ Community.cover_image.url }}" class="logo" style="width: 70px; height: 70px; border-radius: 50%;">
 
-
-
-        <div class="community-background" style="width: 100px; height: 90vh; background:  rgba(0, 0, 255, 0.4); overflow-y: scroll; padding-bottom: 50px;">
-            <!--communities & logos of the communities-->
-            {% for Community in communityin %}
-
-                <img src="{{Community.cover_image.url}}" class="logo" style="width: 70px; height: 70px; margin-left: 15px; display: flex; flex-direction: column; border-radius: 100px; justify-content: center; margin-left: auto; margin-right: auto; margin-top: 50px;">
-                 <div class="popout">
-                    {{ Community.name }}
+                    <!-- Position the popout outside the scrollable container but keep it aligned with the image -->
+                    <div class="popout" style="background: black; color: white; padding: 10px; border-radius: 5px; z-index: 9999; min-width: 100px; text-align: center;">
+                        {{ Community.name }}
+                    </div>
+                    </a>
                 </div>
-            {% endfor %}
+                {% endfor %}
+            </div>
         </div>
-        </div>
+
+
+
 	<!-- JQuery -->
      <script type="text/javascript" src="{% static 'css/js/chat.js' %}"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>

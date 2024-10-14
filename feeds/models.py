@@ -1,6 +1,8 @@
 import uuid
 from datetime import datetime
 from random import randint
+from urllib.parse import urlencode
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.contrib.auth.models import User, BaseUserManager, AbstractBaseUser, PermissionsMixin
@@ -45,6 +47,16 @@ LEVEL = (
     ('P', 'Primordial'),
     ('L', 'Legendary'),
     ('U', 'Ultimate'),
+)
+
+
+POSTTYPE = (
+    ('I', 'Image'),
+    ('V', 'Video'),
+    ('P', 'Photo'),
+    ('R', 'Reel'),
+    ('L', 'Live'),
+    ('S', 'Story'),
 )
 
 
@@ -123,6 +135,7 @@ class IGPost(models.Model):
     user_profile = models.ForeignKey(UserProfile, null=True, blank=True, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
+    type = models.CharField(choices=POSTTYPE, max_length=1)
     image = ProcessedImageField(upload_to='posts',
                                 # processors=[ResizeToFill(200,200)],
                                 format='JPEG',
@@ -131,8 +144,12 @@ class IGPost(models.Model):
     photo = ProcessedImageField(upload_to='posts',
                                 # processors=[ResizeToFill(200,200)],
                                 format='JPEG',
-                                options={'quality': 100})
+                                options={'quality': 100}, blank=True, null=True)
     video = models.FileField(upload_to="posts", blank=True, null=True)
+    cover_photo = ProcessedImageField(upload_to='posts',
+                                # processors=[ResizeToFill(200,200)],
+                                format='JPEG',
+                                options={'quality': 100})
     ide = models.CharField(max_length=100, blank=True, null=True)
     posted_on = models.DateTimeField(default=datetime.now)
 
@@ -233,6 +250,7 @@ class DirectMessages(models.Model):
     image_width = models.PositiveIntegerField(blank=True, null=True, default=100,
                                               help_text='Original width of the advertisement (use for original ratio).',
                                               verbose_name="image width")
+    shared_posts = models.ManyToManyField(IGPost, blank=True)
     is_active = models.IntegerField(default=1, blank=True, null=True, help_text='1->Active, 0->Inactive',
                                     choices=((1, 'Active'), (0, 'Inactive')), verbose_name="Set active?")
 
@@ -244,6 +262,16 @@ class DirectMessages(models.Model):
         message = DirectMessageText.objects.filter(room=self).last()
         return message.timestamp if message else ""
 
+    def get_profile_url(self):
+        profile = UserProfile.objects.filter(user=self.sender).first()
+        if profile:
+            return reverse('profile', args=[str(profile.pk)])
+
+    def get_profile_url2(self):
+        profile = UserProfile.objects.filter(user=self.receiver).first()
+        if profile:
+            return reverse('profile', args=[str(profile.pk)])
+
     def __str__(self):
         return self.label
 
@@ -252,6 +280,7 @@ class DirectMessageText(models.Model):
     room = models.ForeignKey(DirectMessages, related_name='directmessagetext_set', on_delete=models.CASCADE)
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     text = models.TextField()
+    date = models.DateTimeField(default=timezone.now, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -456,9 +485,6 @@ def update_friend_username(sender, instance, created, **kwargs):
 post_save.connect(update_friend_username, sender=Friend)
 
 
-
-
-
 class Community(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Community Leader", blank=True)
     name = models.CharField(max_length=200)
@@ -519,6 +545,16 @@ class Community(models.Model):
     def __str__(self):
         return f"{self.name} owned by {self.user}"
 
+    def get_absolute_url(self):
+        # Base URL for the 'new_chat' view with 'room' argument
+        base_url = reverse('new_chat', kwargs={'room': self.name})
+
+        # Build query string with the username
+        query_string = urlencode({'username': self.user.username})
+
+        # Combine base URL and query string
+        return f"{base_url}?{query_string}"
+
     class Meta:
         unique_together = ("user", "name")
         verbose_name_plural = "Communities"
@@ -535,6 +571,7 @@ class Room(models.Model):
     logo = models.FileField(blank=True, null=True, verbose_name="Logo")
     shared_posts = models.ManyToManyField(IGPost, blank=True, related_name='rooms_shared_with')
     invite_code = models.CharField(max_length=100, blank=True, null=True, unique=True)  # Store invite codes
+    welcome_note = models.CharField(max_length=100, blank=True, null=True)  # Store invite codes
     is_active = models.IntegerField(default=1,
                                     blank=True,
                                     null=True,
@@ -846,6 +883,17 @@ def one_week_hence():
     return timezone.now() + timezone.timedelta(days=7)
 
 
+class EventType(models.Model):
+    eventtype = models.CharField(max_length=200)
+
+    def __str__(self):
+        return 'Event Type - ' + self.eventtype
+
+    class Meta:
+        verbose_name = "Event Type"
+        verbose_name_plural = "Event Types"
+
+
 class EventList(models.Model):
     title = models.CharField(max_length=100, unique=True)
 
@@ -855,6 +903,10 @@ class EventList(models.Model):
     def __str__(self):
         return self.title
 
+    class Meta:
+        verbose_name = "Event List"
+        verbose_name_plural = "Event Lists"
+
 
 class EventItem(models.Model):
     title = models.CharField(max_length=100)
@@ -862,6 +914,13 @@ class EventItem(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     due_date = models.DateTimeField(default=one_week_hence)
     todo_list = models.ForeignKey(EventList, on_delete=models.CASCADE)
+    type = models.ForeignKey(EventType, on_delete=models.CASCADE)
+    is_active = models.IntegerField(default=1,
+                                    blank=True,
+                                    null=True,
+                                    help_text='1->Active, 0->Inactive',
+                                    choices=((1, 'Active'), (0, 'Inactive')), verbose_name="Set active?")
+
 
     def get_absolute_url(self):
         return reverse(
@@ -873,6 +932,8 @@ class EventItem(models.Model):
 
     class Meta:
         ordering = ["due_date"]
+        verbose_name = "Event Item"
+        verbose_name_plural = "Event Items"
 
 
 class Call(models.Model):

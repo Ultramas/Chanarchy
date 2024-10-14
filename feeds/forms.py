@@ -26,7 +26,7 @@ class UserCreateForm(UserCreationForm):
 class PostPictureForm(ModelForm):
     class Meta:
         model = IGPost
-        fields = ['title', 'image']
+        fields = ['title', 'image', 'reel', 'photo', 'description']
 
 
 class ProfileEditForm(ModelForm):

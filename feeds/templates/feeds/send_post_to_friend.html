@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<form method="post">
+    {% csrf_token %}
+    <h2>Select Friends to Share the Post "{{ post.title }}"</h2>
+    <ul>
+        {% for friend in friends %}
+            <li>
+                <label>
+                    <input type="checkbox" name="friends" value="{{ friend.friend.id }}">
+                    {{ friend.friend.username }}
+                </label>
+            </li>
+        {% endfor %}
+    </ul>
+    <button type="submit">Send Post</button>
+</form>
+
+</body>
+</html>

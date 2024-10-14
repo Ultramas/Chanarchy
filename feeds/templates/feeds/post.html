@@ -25,10 +25,27 @@
     margin: 0 auto;
     display: block;
 }
-    .comment {
+.comment {
   white-space: normal; /* This allows the text to wrap onto the next line */
   word-wrap: break-word; /* Break long words if needed */
   overflow: hidden;
+}
+
+.left {
+    left: 150px;
+}
+
+.right {
+    right: 99px;
+}
+.split {
+    height: 100%;
+    width: 40%;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    overflow-x: hidden;
+    padding-top: 20px;
 }
 
 </style>
@@ -53,7 +70,7 @@
 </head>
 {% for BackgroundTheme in theme %}
       {% if BackgroundTheme.currently_set %}
-<body style="background-image: url({{ BackgroundTheme.cover.url }}); background-size: cover;">
+<body style="background-image: url({{ BackgroundTheme.cover.url }}); background-size: cover; background-attachment: fixed;>
 {% else %}
 <body>
 {% endif %}
@@ -80,9 +97,16 @@
 <div class="row single-post">
   <div class="single-post-card view-update {{ post.pk }}" style="height: 100vh;">
     <div class="header">
+
+<div class="split right" >
       <a href="{% url 'profile' post.user_profile.user.username %}">
         {% if post.user_profile.profile_pic %}
-          <img class="picture-circle--medium" src="{{ post.user_profile.profile_pic.url }}">
+          <br>
+          <br>
+          <br>
+          <br>
+          <br>
+          <img class="picture-circle--medium" src="{{ post.user_profile.profile_pic.url }}" style="border-radius: 50px; width: 50px; height: 50px; margin-left: 40%;">
         {% else %}
           <img class="picture-circle--medium" src="{% static 'images/profile_placeholder.jpg' %}">
         {% endif %}
@@ -91,27 +115,18 @@
           <span class="comment" style="margin-left: 10px; font-size: 20px;">{{ post.title | parse_hashtags | safe }}</span>
 <br>
 <br>
-
-    </div>
-      <div class="secondheader" style="position: absolute; margin-left: 82%; margin-top: 70px; white-space: normal;
-  word-wrap: break-word;
-  overflow: hidden;">
-          <span class="comment" style="margin-top: 50px;">
+   <span class="comment" style=" margin-left: auto; margin-right: auto;
+    z-index: 10;
+    position: relative;">
   <span id="short-description">
     {{ post.description|truncatechars:200 }}
+  <a href="javascript:void(0);" id="read-more" onclick="toggleDescription()" style="text-decoration: none;">Read more</a>
+
   </span>
   <span id="full-description" style="display: none;">
     {{ post.description }}
   </span>
-  <a href="javascript:void(0);" id="read-more" onclick="toggleDescription()" style="text-decoration: none;">Read more</a>
-</span>
-
-          <br>
-          <br>
-  </div>
-    <div class="image__wrapper" style="margin-top: 8%;">
-      <img class="card__main-image" src="{{ post.image.url }}" style="height: 100vh;">
-    </div>
+   </span>
 
     <div class="comments-portion" style="margin-bottom: 10%;">
       <hr>
@@ -122,20 +137,21 @@
 
 
         {% for comment in post.comment_set.all %}
-          <li class="comment-list__comment">
+          <li class="comment-list__comment" style="list-style-type: none;">
             <a href="{% url 'profile' comment.user.username %}" class="user">
               {% if post.user_profile.profile_pic %}
-          <img class="picture-circle--medium" src="{{ post.user_profile.profile_pic.url }}" style="margin-right: 5px;">
+          <img class="picture-circle--medium" src="{{ post.user_profile.profile_pic.url }}" style="margin-right: 5px; border-radius: 50px; width: 50px; height: 50px;">
         {% else %}
-          <img class="picture-circle--medium" src="{% static 'images/profile_placeholder.jpg' %}" style="margin-right: 5px;">
+          <img class="picture-circle--medium" src="{% static 'images/profile_placeholder.jpg' %}" style="margin-right: 5px; border-radius: 50px; width: 50px; height: 50px;">
         {% endif %}
               {{ comment.user.username }}
             </a>
             <span class="comment">{{ comment.comment }}</span>
           </li>
+          <br>
         {% endfor %}
       </ul>
-      <div class="likes-timestamp-row" style="margin-top: 50px;">
+      <div class="likes-timestamp-row" style="margin-top: 50px; z-index: 10;">
         <hr style="margin-bottom: 20px;">
         <div class="likes">
           <a href="{% url 'likes' post.pk %}">
@@ -150,16 +166,29 @@
         </div>
       </div>
 
-      <form action="{% url 'send_post_to_friend' post.id room.name %}" method="POST">
-    {% csrf_token %}
-    <button type="submit">Send to Room</button>
-</form>
+{% if friends %}
+    <form action="{% url 'send_post_to_friend' post.id %}" method="POST">
+        {% csrf_token %}
+        <p>Select friends to send this post to:</p>
+        {% for friend in friends %}
+            <div>
+                <input type="checkbox" name="friends[]" value="{{ friend.friend.id }}" id="friend_{{ friend.friend.id }}">
+                <label for="friend_{{ friend.friend.id }}">{{ friend.friend.username }}</label>
+            </div>
+        {% endfor %}
+        <button type="submit">Send To Selected Friends</button>
+    </form>
+{% else %}
+    <p>No friends available to send this post to.</p>
+{% endif %}
+
+
 
       {% if request.user.is_authenticated %}
-        <section class="input-row">
+        <section class="input-row" style="display: flex; padding-between: 10px;">
           <i class="fa {% if liked %}fa-heart{% else %}fa-heart-o{% endif %} submit-like" aria-hidden="true"></i>
           <div class="comment-input-wrapper">
-            <input class="add-comment" type="text" placeholder="Add a comment...">
+            <input class="add-comment" style="margin-left: 10px; margin-top: -100px;" type="text" placeholder="Add a comment...">
           </div>
           <div class="hidden-data {{ post.pk }}" style="display: none;">
             <span class="post-pk">{{ post.pk }}</span>
@@ -167,6 +196,27 @@
         </section>
       {% endif %}
     </div>
+
+</div>
+
+    </div>
+      <div class="secondheader" style="
+    display: flex;  white-space: normal;
+  word-wrap: break-word; margin-left: auto; margin-right: auto;
+  overflow: hidden;">
+
+
+          <br>
+          <br>
+  </div>
+
+<div class="split left" style="margin-left: 50px; padding-right: -200px;">
+    <div class="image__wrapper" style="margin-top: 10%;">
+      <img class="card__main-image" src="{{ post.image.url }}" style="height: 100vh;">
+    </div>
+
+</div>
+<br>
   </div>
 </div>
 </body>

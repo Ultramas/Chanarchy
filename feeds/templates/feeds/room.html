@@ -407,9 +407,12 @@ $(document).ready(function(){
 
 		<div class="container-fluid h-100" style="background: linear-gradient(rgba(0, 0, 255, 0.8), rgba(0, 255, 0, 0.8)); padding-top; 30px;">
 			<div class="row justify-content-center h-100">
+                <br>
+                <br>
+                <br>
   <h1 style="text-align: center;  margin-bottom: -0px; color: rgba(255, 255, 255, 0.5); ">{{username}} - {{room}}</h1>
                 <br><br><br>
-				<div class="col-md-4 col-xl-3 chat"><div class="card mb-sm-3 mb-md-0 contacts_card" style="margin-left: 50%; width: 65%; padding: 20px;">
+				<div class="col-md-4 col-xl-3 chat"><div class="card mb-sm-3 mb-md-0 contacts_card" style="margin-left: 50%; width: 65%; padding: 20px; background: rgba(255, 255, 255, 0.4); border-radius: 5px;">
 					<div class="card-header">
 						<form action="{% url 'new_chat' %}" method="get">
                             <div class="input-group">
@@ -478,7 +481,7 @@ $(document).ready(function(){
               </div>
               <div class="user_info">
                   <span style="margin-top: 0px; font-size: 18px;">{{ friend.username }}</span>
-                  <span style="font-size: 12px; margin-left: 10px; margin-top: 20px;" style="margin-top: 0px;">{{ friend.description }}</span>
+                  <span style="font-size: 12px; margin-left: 10px; margin-top: 20px; margin-top: 0px;">{{ friend.description }}</span>
                   {% if friend.online == True %}
                     <p>
                         <span style="color: green; font-size: 24px; margin-left: -25%;">●</span>
@@ -576,12 +579,6 @@ $(document).ready(function(){
 									<p>1767 Messages</p>
 									{% endfor %}
 								</div>
-								<div class="video_cam">
-                                    <span>{{room}}</span>
-									<span><i class="fas fa-video" style="font-size: 30px;"></i></span>
-									<span><i class="fas fa-phone" style="font-size: 30px;"></i></span>
-							        <span id="action_menu_btn"><i class="fas fa-ellipsis-v"></i></span>
-								</div>
 							</div>
 							<div class="action_menu">
 								<ul>
@@ -644,12 +641,18 @@ $(document).ready(function(){
 });
 </script>
 
-<div class="chat-container" id="chat-container" style="background-color: rgba(0, 0, 0, 0);">
-
+<div class="chat-container" id="chat-container" style="background-color: rgba(0, 0, 0, 0.4); margin-top: -4.5%;">
 <br>
 
+    {% if room.welcome_note %}
+    <h2 class="welcome-note" style="color: rgba(255, 255, 255, 0.3); text-align: center; margin-top: 25px;">
+         {{ room.welcome_note }}
+    </h2>
+    {% endif %}
+
+
     <div id="display" style="overflow-y: scroll; height: 800px;"></div>
-  <div class="chat-input" style="display: flex; flex-direction: row; width: 94.5%; margin-left: 5.5%;">
+  <div class="chat-input" style="display: flex; flex-direction: row; width: 94.5%; margin-left: 5.5%; background: rgba(255, 255, 255, 0.3);">
   <form id="post-form" enctype="multipart/form-data" style="width: 94.5%;">
     {% csrf_token %}
     <input type="hidden" name="username" id="username" value="{{username}}" />

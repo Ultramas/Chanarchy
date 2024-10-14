@@ -54,6 +54,15 @@ from .forms import UserCreateForm, PostPictureForm, ProfileEditForm, CommentForm
 from .models import UserProfile, IGPost, Comment, Like, Message, Room, BackgroundTheme, SettingsModel, Community, \
     Friend, DefaultAvatar, DirectMessages, DirectMessageText
 
+from django.urls import reverse, reverse_lazy
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    ListView,
+    UpdateView,
+)
+
+from .models import EventItem, EventList
 
 class BackgroundView(ListView):
     model = BackgroundTheme
@@ -1212,17 +1221,37 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 
 
-def send_post_to_friend(request, post_id, room_name):
+def send_post_to_friend(request, post_id):
     post = get_object_or_404(IGPost, id=post_id)
-    room = get_object_or_404(Room, name=room_name)
+    user = request.user
+    friends = Friend.objects.filter(user=user)
 
-    if request.user in room.members.all() or room.public:
-        room.shared_posts.add(post)  # Add the post to the room
-        messages.success(request, f'Post "{post.title}" sent to {room.name}')
-    else:
-        messages.error(request, 'You are not allowed to send a post to this room.')
+    if request.method == 'POST':
+        print("POST data:", request.POST)  # Print all POST data
+        selected_friends_ids = request.POST.getlist('friends')  # Get list of selected friends IDs
+        print("Selected friends IDs:", selected_friends_ids)  # Debug: Check selected friends IDs
 
-    return redirect('room', room_name=room.name)
+        if selected_friends_ids:
+            selected_friends = User.objects.filter(id__in=selected_friends_ids)
+            for friend in selected_friends:
+                print('I have a friend:', friend.username)  # Debug: Check if loop is working
+
+                # Proceed with your logic...
+                room_name = f"{user.username}-{friend.username}"
+                room, created = DirectMessages.objects.get_or_create(
+                    label=room_name, sender=user, receiver=friend
+                )
+                room.shared_posts.add(post)
+                messages.success(request, f'Post "{post.title}" sent to {friend.username}')
+
+        else:
+            print("No friends selected")
+
+    context = {
+        'post': post,
+        'friends': friends
+    }
+    return render(request, 'feeds/send_post_to_friend.html', context)
 
 
 def getMessages(request, room):
@@ -1305,33 +1334,27 @@ def chat_view(request, room):
     return render(request, 'chat.html', {'label': room})
 
 
-# event_list/todo_app/views.py
-from django.urls import reverse, reverse_lazy
-from django.views.generic import (
-    CreateView,
-    DeleteView,
-    ListView,
-    UpdateView,
-)
-
-from .models import EventItem, EventList
-
-
 class ListListView(ListView):
     model = EventList
-    template_name = "todo_app/index.html"
+    template_name = "feeds/index.html"
 
 
 class ItemListView(ListView):
     model = EventItem
-    template_name = "todo_app/event_list.html"
+    template_name = "feeds/event_list.html"
 
     def get_queryset(self):
-        return EventItem.objects.filter(event_list_id=self.kwargs["list_id"])
+        list_id = self.kwargs.get("list_id")
+        if list_id:
+            return EventItem.objects.filter(event_list_id=list_id)
+        return EventItem.objects.all()  # Fallback to all items if no list_id is provided
 
-    def get_context_data(self):
-        context = super().get_context_data()
-        context["event_list"] = EventList.objects.get(id=self.kwargs["list_id"])
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        list_id = self.kwargs.get("list_id")
+        if list_id:
+            context["event_list"] = EventList.objects.get(id=list_id)
+        context["event_item"] = EventItem.objects.filter(is_active=1)
         return context
 
 
@@ -1656,12 +1679,39 @@ from django.template.loader import render_to_string
 from .models import DirectMessages, DirectMessageText
 
 
+def message_detail_view(request, message_id):
+    message = get_object_or_404(DirectMessages, id=message_id)
+    user = request.user
+
+    # Determine if the current user is the sender or the receiver
+    if user == message.sender:
+        other_user_profile = UserProfile.objects.get(user=message.receiver)
+    else:
+        other_user_profile = UserProfile.objects.get(user=message.sender)
+
+    context = {
+        'message': message,
+        'other_user_profile': other_user_profile,
+    }
+
+    return render(request, 'direct_messages.html', context)
+
+
 class DirectMessageView(View):
     template_name = 'feeds/direct_messages.html'
 
     def get(self, request, label):
         room = get_object_or_404(DirectMessages, label=label)
         messages = DirectMessageText.objects.filter(room=room).order_by('timestamp')
+
+        # Check if the current user is the receiver or sender and get the other user
+        if room.receiver == request.user:
+            other_user = room.sender
+        else:
+            other_user = room.receiver
+
+        # Get the profile of the other user
+        other_user_profile = UserProfile.objects.filter(user=other_user).first()
 
         # Add profile data for each message sender
         for message in messages:
@@ -1671,32 +1721,54 @@ class DirectMessageView(View):
                 message.sender.profile_pic_url = profile.profile_pic.url
 
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            html = render_to_string('feeds/direct_messages.html', {'messages': messages}, request=request)
+            html = render_to_string('feeds/direct_messages.html', {
+                'messages': messages,
+                'other_user_profile': other_user_profile,  # Pass the other user's profile
+            }, request=request)
             return JsonResponse({'html': html})
 
         context = {
             'room': room,
             'messages': messages,
+            'other_user_profile': other_user_profile,  # Pass the other user's profile
         }
         return render(request, self.template_name, context)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         signed_in_user = self.request.user
-        if self.request.user.is_authenticated:
+
+        if signed_in_user.is_authenticated:
+            # Add theme and profiles for the signed-in user
             context['theme'] = BackgroundTheme.objects.filter(is_active=1, user=signed_in_user)
 
-            current_user = self.request.user
-            newprofile = UserProfile.objects.filter(is_active=1, user=current_user)
-            context['Profiles'] = newprofile
+            current_user_profile = UserProfile.objects.filter(is_active=1, user=signed_in_user).first()
+            context['Profiles'] = current_user_profile
 
-            # Process profiles to add URLs and avatars
-            for newprofile in context['Profiles']:
-                user = newprofile.user
-                profile = UserProfile.objects.filter(user=user).first()
-                if profile:
-                    newprofile.newprofile_profile_picture_url = profile.profile_pic.url
-                    newprofile.newprofile_profile_url = newprofile.get_profile_url()
+            # Fetch the room from the label slug passed in the URL
+            room = DirectMessages.objects.get(label=self.kwargs.get('room'))
+
+            # Determine who the other user is (sender or receiver)
+            if room.receiver == signed_in_user:
+                other_user = room.sender
+            else:
+                other_user = room.receiver
+
+            # Fetch the other user's profile
+            other_user_profile = UserProfile.objects.filter(user=other_user).first()
+            if other_user_profile:
+                context['other_user_profile'] = other_user_profile
+                context['other_user_profile_url'] = other_user_profile.get_profile_url()
+
+                # Fetch the avatar or profile picture URL
+                context[
+                    'other_user_avatar_url'] = other_user_profile.profile_pic.url if other_user_profile.profile_pic else 'default_avatar_url'
+
+            # Get the profile URL for the current signed-in user
+            if current_user_profile:
+                context['current_user_profile_url'] = current_user_profile.get_profile_url()
+
+        return context
 
     def post(self, request, label):
         room = get_object_or_404(DirectMessages, label=label)
@@ -1710,7 +1782,6 @@ class DirectMessageView(View):
                     sender=request.user,
                     text=message_text
                 )
-                new_message.save()
 
                 # Attach profile data for the sender
                 profile = UserProfile.objects.filter(user=request.user).first()
@@ -1718,7 +1789,9 @@ class DirectMessageView(View):
                     new_message.sender.profile_url = profile.get_profile_url()
                     new_message.sender.profile_pic_url = profile.profile_pic.url
 
-                html = render_to_string('feeds/direct_messages.html', {'messages': [new_message]}, request=request)
-                return JsonResponse({'html': html})
+                # Render the single message template
+                html = render_to_string('feeds/direct_message_single.html', {'message': new_message}, request=request)
+                return JsonResponse({'message_html': html})
 
         return HttpResponseRedirect(request.path_info)
+
